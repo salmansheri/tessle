@@ -4,31 +4,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Low-code platform ("Tessle"), early scaffold stage. The workspace root is not a git repo; it holds two independent projects:
+Tessle, a multi-tenant low-code platform. Read `CONTEXT.md` (glossary), `docs/architecture.md` (plan, module map, version table) and `docs/adr/` before designing anything. Work is tracked in GitHub issues (spec #1, tickets #2 to #10).
 
-- `Lowcodebackend/` — Spring Boot 4.1.1, Java 27, Maven (package `dev.salman.Lowcodebackend`). Currently only the generated application class and a context-load test exist.
-- `lowcodefrontend/` — Next.js 16.4 (App Router, `app/`), React 19, Tailwind 4, TypeScript, Bun (`packageManager: bun@1.4.0`). Has its own git repo. Still the create-next-app starter.
+Monorepo:
 
-No API contract or frontend↔backend wiring exists yet.
+- `backend/`: Spring Boot 4.1.1, JDK 25 (Boot 4.1 supports up to 26; do not use 27), Maven, package `dev.salman.Lowcodebackend`.
+- `frontend/`: Next.js 16.4 App Router, React 19, Tailwind 4, Bun.
+- `schemas/`: hand-written Definition JSON Schemas (empty until Forms).
 
-## Backend commands (run in `Lowcodebackend/`)
+## Backend commands (run in `backend/`)
 
-- Run: `./mvnw spring-boot:run`
+- Run: `./mvnw spring-boot:run` (needs Docker; `spring-boot-docker-compose` starts Postgres 18, Redis 8 with AOF, RabbitMQ 4 from `compose.yaml`)
 - Build / test all: `./mvnw verify`
-- Single test: `./mvnw test -Dtest=LowcodebackendApplicationTests` (or `Class#method`)
+- Single test: `./mvnw test -Dtest=Class#method`
 
-Lombok and `spring-boot-configuration-processor` are wired as annotation processors explicitly in `pom.xml` (compile and testCompile executions) — keep that when editing the compiler plugin.
+Tests use Testcontainers (`TestcontainersConfiguration`, `@ServiceConnection`) against real Postgres, Redis and RabbitMQ, so Docker must be running. Migrations are Flyway files under `src/main/resources/db/migration`. Lombok and `spring-boot-configuration-processor` are wired as annotation processors in `pom.xml`; keep that when editing the compiler plugin.
 
-### Infrastructure
+## Frontend commands (run in `frontend/`)
 
-The backend is intended to be polyglot: starters for JPA, MongoDB, Redis, AMQP (RabbitMQ), and Security/WebMVC, with JDBC drivers for PostgreSQL, MySQL, Oracle, and SQL Server. `compose.yaml` defines a container for each (dev credentials inline, ports unmapped/random). `spring-boot-docker-compose` auto-starts these on `spring-boot:run`, so Docker must be running, and the app will try to connect to all of them. `application.yaml` only sets the app name; no datasource config yet.
+- Dev: `bun dev`; build: `bun run build`; lint: `bun run lint`
+- No test runner yet. `@hey-api/openapi-ts` is pinned exactly (pre-1.0).
 
-## Frontend commands (run in `lowcodefrontend/`)
+**Important:** `frontend/AGENTS.md` warns this Next.js version has breaking changes from training data. Read the relevant guide in `frontend/node_modules/next/dist/docs/` before writing Next.js code.
 
-- Dev: `bun dev`
-- Build: `bun run build`
-- Lint: `bun run lint` (ESLint 9 flat config, `eslint.config.mjs`)
+CI (`.github/workflows/ci.yml`) runs backend `verify` and frontend lint + build.
 
-No test runner is configured.
+## Agent skills
 
-**Important:** `lowcodefrontend/AGENTS.md` warns this Next.js version has breaking changes from training data. Read the relevant guide in `lowcodefrontend/node_modules/next/dist/docs/` before writing Next.js code, and heed deprecation notices.
+### Issue tracker
+
+GitHub Issues on salmansheri/tessle, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-label vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.

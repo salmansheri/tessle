@@ -1,0 +1,12 @@
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# editor / OS
+.idea/
+*.iml
+.DS_Store
+
+# claude local settings
+.claude/settings.local.json
