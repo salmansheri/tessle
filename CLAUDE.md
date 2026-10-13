@@ -22,7 +22,9 @@ Tests use Testcontainers (`TestcontainersConfiguration`, `@ServiceConnection`) a
 
 ## Frontend commands (run in `frontend/`)
 
-- Dev: `bun dev`; build: `bun run build`; lint: `bun run lint`
+- Dev: `bun dev`; build: `bun run build`; lint: `bun run lint`; typecheck: `bun run typecheck`
+- API client: never hand-write API calls. `frontend/openapi.json` is the committed backend spec; `bun run generate:api` regenerates `lib/api/generated` (Hey API, TanStack Query hooks). The browser calls `/api` on the Next origin, which `next.config.ts` rewrites to `BACKEND_URL` (default `http://localhost:8080`). Rewrites are baked in at `next build`, so set `BACKEND_URL` at build time, not only at `next start`.
+- After changing any backend endpoint: `cd backend && ./mvnw test -Dtest=OpenApiContractTests -Dopenapi.update=true`, (needs Docker, like all backend tests), then `bun run generate:api`, and commit both. CI fails on a stale spec or stale generated code.
 - No test runner yet. `@hey-api/openapi-ts` is pinned exactly (pre-1.0).
 
 **Important:** `frontend/AGENTS.md` warns this Next.js version has breaking changes from training data. Read the relevant guide in `frontend/node_modules/next/dist/docs/` before writing Next.js code.
