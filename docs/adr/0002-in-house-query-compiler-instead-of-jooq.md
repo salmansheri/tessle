@@ -1,0 +1,3 @@
+# In-house query compiler on JDBC for tenant Data sources, no jOOQ
+
+JPA handles platform metadata, but tenant schemas are discovered at runtime so entities cannot model them. We compile Report and Form Definitions to SQL with our own compiler, with one renderer per dialect (PostgreSQL, MySQL, Oracle, SQL Server), behind a `QueryExecutor` interface. jOOQ was rejected because its open-source edition does not support Oracle or SQL Server and the commercial licence is a recurring per-developer cost. Because Definitions are structured JSON, the compiler can guarantee no free-form SQL by construction.

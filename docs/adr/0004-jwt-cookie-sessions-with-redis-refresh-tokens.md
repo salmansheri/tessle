@@ -1,0 +1,3 @@
+# JWT cookies with rotating refresh tokens stored in Redis
+
+Access (10 min) and refresh (7 day) tokens are JWTs in HttpOnly, Secure, SameSite=Lax cookies, never in localStorage. Refresh token hashes live in Redis, rotate on every use, and reuse of an old token revokes the whole family. The access token carries only user and active Workspace ids; the Membership role is read per request through a short-TTL Redis cache so role changes apply quickly. Redis therefore needs AOF persistence, or a restart signs everyone out. Stateless refresh tokens were rejected because they cannot be revoked. OTP codes live hashed in Postgres, and sign-in emails are sent by a RabbitMQ consumer through `JavaMailSender` (Resend SMTP).
