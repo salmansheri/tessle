@@ -9,6 +9,92 @@
     "description" : "Generated server url"
   } ],
   "paths" : {
+    "/api/workspaces" : {
+      "get" : {
+        "tags" : [ "workspace-controller" ],
+        "summary" : "The Workspaces the caller belongs to",
+        "operationId" : "listWorkspaces",
+        "responses" : {
+          "200" : {
+            "description" : "The caller's Workspaces",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/WorkspaceResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "workspace-controller" ],
+        "summary" : "Create a Workspace; the caller becomes its owner and it becomes active",
+        "operationId" : "createWorkspace",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateWorkspace"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created; the access cookie is renewed with the new active Workspace",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WorkspaceResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid name",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WorkspaceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workspaces/{id}/activate" : {
+      "post" : {
+        "tags" : [ "workspace-controller" ],
+        "summary" : "Switch the session's active Workspace",
+        "operationId" : "activateWorkspace",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Switched; the access cookie is renewed"
+          },
+          "404" : {
+            "description" : "Not a Workspace the caller belongs to"
+          },
+          "401" : {
+            "description" : "The session has ended"
+          }
+        }
+      }
+    },
     "/api/auth/refresh" : {
       "post" : {
         "tags" : [ "auth-controller" ],
@@ -211,6 +297,34 @@
   },
   "components" : {
     "schemas" : {
+      "CreateWorkspace" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "name" ]
+      },
+      "WorkspaceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string",
+            "description" : "The caller's role in this Workspace"
+          }
+        },
+        "required" : [ "id", "name", "role" ]
+      },
       "OtpVerification" : {
         "type" : "object",
         "properties" : {
@@ -236,6 +350,11 @@
           },
           "email" : {
             "type" : "string"
+          },
+          "activeWorkspaceId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The Workspace the session is acting in, if one has been chosen"
           }
         },
         "required" : [ "email", "id" ]

@@ -44,7 +44,8 @@ class AuthController {
 	}
 
 	record UserResponse(@Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID id,
-			@Schema(requiredMode = Schema.RequiredMode.REQUIRED) String email) {
+			@Schema(requiredMode = Schema.RequiredMode.REQUIRED) String email,
+			@Schema(description = "The Workspace the session is acting in, if one has been chosen") UUID activeWorkspaceId) {
 	}
 
 	private final OtpService otp;
@@ -97,7 +98,7 @@ class AuthController {
 			for (ResponseCookie cookie : tokens.start(user)) {
 				ok.header(HttpHeaders.SET_COOKIE, cookie.toString());
 			}
-			return ok.body(new UserResponse(user.getId(), user.getEmail()));
+			return ok.body(new UserResponse(user.getId(), user.getEmail(), null));
 		}).orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
 	}
 
@@ -136,7 +137,7 @@ class AuthController {
 	@GetMapping("/me")
 	ResponseEntity<UserResponse> me(@Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt) {
 		return users.findById(UUID.fromString(jwt.getSubject()))
-				.map(user -> ResponseEntity.ok(new UserResponse(user.getId(), user.getEmail())))
+				.map(user -> ResponseEntity.ok(new UserResponse(user.getId(), user.getEmail(), activeWorkspace(jwt))))
 				.orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
 	}
 
@@ -145,6 +146,11 @@ class AuthController {
 			builder.header(HttpHeaders.SET_COOKIE, cookie.toString());
 		}
 		return builder.build();
+	}
+
+	private static UUID activeWorkspace(Jwt jwt) {
+		String claim = jwt.getClaimAsString(TokenService.WORKSPACE_CLAIM);
+		return claim == null ? null : UUID.fromString(claim);
 	}
 
 	private static String normalize(String email) {

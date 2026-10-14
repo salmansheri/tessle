@@ -44,6 +44,9 @@ class SessionTests {
 	@Autowired
 	StringRedisTemplate redis;
 
+	@Autowired
+	org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder;
+
 	@MockitoBean
 	JavaMailSender mail;
 
@@ -248,6 +251,30 @@ class SessionTests {
 		MvcResult out = postWithCsrf("/api/auth/logout", browser.access());
 		assertThat(out.getResponse().getHeaders("Set-Cookie").stream().filter(c -> c.startsWith("tessle_s=")).findFirst()
 				.orElseThrow()).contains("Max-Age=0");
+	}
+
+	@Test
+	void anEndedSessionCannotBeGivenAnActiveWorkspace() throws Exception {
+		Browser browser = signIn(newUser("ghost@example.com"));
+		var jwt = jwtDecoder.decode(browser.access().getValue());
+		postWithCsrf("/api/auth/logout", browser.access());
+
+		assertThat(tokens.activateWorkspace(jwt, UUID.randomUUID())).isEmpty();
+		assertThat(redis.hasKey("famws:" + jwt.getClaimAsString("sid"))).isFalse();
+	}
+
+	@Test
+	void revokingAFamilyForgetsItsActiveWorkspaceToo() throws Exception {
+		Browser browser = signIn(newUser("tidy@example.com"));
+		var jwt = jwtDecoder.decode(browser.access().getValue());
+		String key = "famws:" + jwt.getClaimAsString("sid");
+		assertThat(tokens.activateWorkspace(jwt, UUID.randomUUID())).isPresent();
+		assertThat(redis.hasKey(key)).isTrue();
+
+		postWithCsrf("/api/auth/refresh", browser.refresh());
+		refresh(browser.refresh());
+
+		assertThat(redis.hasKey(key)).as("reuse detection clears it").isFalse();
 	}
 
 }

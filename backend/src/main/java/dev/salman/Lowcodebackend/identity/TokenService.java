@@ -34,13 +34,14 @@ import org.springframework.stereotype.Service;
  * signs everyone out.
  */
 @Service
-class TokenService {
+public class TokenService {
 
 	static final String ACCESS_COOKIE = "tessle_at";
 	static final String REFRESH_COOKIE = "tessle_rt";
 	static final String HINT_COOKIE = "tessle_s";
 	static final String REFRESH_PATH = "/api/auth/refresh";
 	static final String SESSION_CLAIM = "sid";
+	public static final String WORKSPACE_CLAIM = "wid";
 	static final Duration ACCESS_TTL = Duration.ofMinutes(10);
 	static final Duration REFRESH_TTL = Duration.ofDays(7);
 
@@ -54,9 +55,21 @@ class TokenService {
 			return 1
 			""", Long.class);
 
+	/**
+	 * Sets the active Workspace only while the family is alive, so a logout racing an activation cannot
+	 * leave an orphan key behind. KEYS: fam, famws. ARGV: workspace, ttl seconds.
+	 */
+	private static final DefaultRedisScript<Long> ACTIVATE = new DefaultRedisScript<>("""
+			if redis.call('EXISTS', KEYS[1]) == 0 then return 0 end
+			redis.call('SET', KEYS[2], ARGV[1], 'EX', ARGV[2])
+			return 1
+			""", Long.class);
+
 	/** Revokes every family in the user's index in one step. KEYS[1] = user index. */
 	private static final DefaultRedisScript<Long> REVOKE_ALL = new DefaultRedisScript<>("""
-			for _, fam in ipairs(redis.call('SMEMBERS', KEYS[1])) do redis.call('DEL', 'fam:' .. fam) end
+			for _, fam in ipairs(redis.call('SMEMBERS', KEYS[1])) do
+			  redis.call('DEL', 'fam:' .. fam, 'famws:' .. fam)
+			end
 			redis.call('DEL', KEYS[1])
 			return 1
 			""", Long.class);
@@ -72,7 +85,7 @@ class TokenService {
 			local famKey = 'fam:' .. fam
 			if redis.call('EXISTS', famKey) == 0 then return {'revoked'} end
 			if redis.call('HGET', KEYS[1], 'used') == '1' then
-			  redis.call('DEL', famKey)
+			  redis.call('DEL', famKey, 'famws:' .. fam)
 			  return {'reuse'}
 			end
 			local user = redis.call('HGET', KEYS[1], 'user')
@@ -81,6 +94,7 @@ class TokenService {
 			redis.call('EXPIRE', ARGV[1], ARGV[2])
 			redis.call('EXPIRE', famKey, ARGV[2])
 			redis.call('EXPIRE', 'user-fams:' .. user, ARGV[2])
+			redis.call('EXPIRE', 'famws:' .. fam, ARGV[2])
 			return {'ok', fam, user}
 			""", List.class);
 
@@ -106,7 +120,21 @@ class TokenService {
 		String refresh = refreshToken(userId, family);
 		redis.execute(START, List.of("fam:" + family, "user-fams:" + userId, "rt:" + hash(refresh)), userId, family,
 				String.valueOf(REFRESH_TTL.toSeconds()));
-		return pair(userId, family, refresh);
+		return pair(userId, family, null, refresh);
+	}
+
+	/**
+	 * Makes {@code workspaceId} the session's active Workspace and returns a fresh access cookie naming it.
+	 * The caller must already have checked membership. The choice survives refreshes.
+	 */
+	public Optional<ResponseCookie> activateWorkspace(Jwt access, UUID workspaceId) {
+		String family = access.getClaimAsString(SESSION_CLAIM);
+		Long set = redis.execute(ACTIVATE, List.of("fam:" + family, "famws:" + family), workspaceId.toString(),
+				String.valueOf(REFRESH_TTL.toSeconds()));
+		if (set == null || set == 0L) {
+			return Optional.empty();
+		}
+		return Optional.of(cookie(ACCESS_COOKIE, accessToken(access.getSubject(), family, workspaceId.toString()), "/", ACCESS_TTL));
 	}
 
 	/** Exchanges a refresh token for a new pair, or empty if it is unknown, expired, revoked or reused. */
@@ -128,11 +156,12 @@ class TokenService {
 		if (result == null || result.isEmpty() || !"ok".equals(result.get(0))) {
 			return Optional.empty();
 		}
-		return Optional.of(pair(result.get(2), result.get(1), next));
+		String workspace = redis.opsForValue().get("famws:" + result.get(1));
+		return Optional.of(pair(result.get(2), result.get(1), workspace, next));
 	}
 
 	void revoke(String family) {
-		redis.delete("fam:" + family);
+		redis.delete(List.of("fam:" + family, "famws:" + family));
 	}
 
 	void revokeAll(UUID userId) {
@@ -145,12 +174,8 @@ class TokenService {
 				cookie(REFRESH_COOKIE, "", REFRESH_PATH, Duration.ZERO), hint(Duration.ZERO) };
 	}
 
-	private ResponseCookie[] pair(String userId, String family, String refresh) {
-		Instant now = clock.instant();
-		String access = sign(JwtClaimsSet.builder().issuer(IdentityConfig.ISSUER).subject(userId)
-				.claim(IdentityConfig.TYPE_CLAIM, IdentityConfig.ACCESS).claim(SESSION_CLAIM, family)
-				.issuedAt(now).expiresAt(now.plus(ACCESS_TTL)).id(UUID.randomUUID().toString()).build());
-		return new ResponseCookie[] { cookie(ACCESS_COOKIE, access, "/", ACCESS_TTL),
+	private ResponseCookie[] pair(String userId, String family, String workspace, String refresh) {
+		return new ResponseCookie[] { cookie(ACCESS_COOKIE, accessToken(userId, family, workspace), "/", ACCESS_TTL),
 				cookie(REFRESH_COOKIE, refresh, REFRESH_PATH, REFRESH_TTL), hint(REFRESH_TTL) };
 	}
 
@@ -161,6 +186,18 @@ class TokenService {
 	private ResponseCookie hint(Duration maxAge) {
 		return ResponseCookie.from(HINT_COOKIE, maxAge.isZero() ? "" : "1").httpOnly(false).secure(secureCookies)
 				.sameSite("Lax").path("/").maxAge(maxAge).build();
+	}
+
+	/** {@code workspace} is the active Workspace id, or null before one is chosen. */
+	private String accessToken(String userId, String family, String workspace) {
+		Instant now = clock.instant();
+		JwtClaimsSet.Builder claims = JwtClaimsSet.builder().issuer(IdentityConfig.ISSUER).subject(userId)
+				.claim(IdentityConfig.TYPE_CLAIM, IdentityConfig.ACCESS).claim(SESSION_CLAIM, family)
+				.issuedAt(now).expiresAt(now.plus(ACCESS_TTL)).id(UUID.randomUUID().toString());
+		if (workspace != null) {
+			claims.claim(WORKSPACE_CLAIM, workspace);
+		}
+		return sign(claims.build());
 	}
 
 	private String refreshToken(String userId, String family) {

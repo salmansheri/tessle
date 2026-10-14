@@ -3,8 +3,93 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { getCsrf, getHealth, getMe, logout, logoutEverywhere, type Options, refreshSession, requestOtp, verifyOtp } from '../sdk.gen';
-import type { GetCsrfData, GetCsrfResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeError, GetMeResponse, LogoutData, LogoutEverywhereData, LogoutEverywhereResponse, LogoutResponse, RefreshSessionData, RefreshSessionResponse, RequestOtpData, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
+import { activateWorkspace, createWorkspace, getCsrf, getHealth, getMe, listWorkspaces, logout, logoutEverywhere, type Options, refreshSession, requestOtp, verifyOtp } from '../sdk.gen';
+import type { ActivateWorkspaceData, ActivateWorkspaceResponse, CreateWorkspaceData, CreateWorkspaceError, CreateWorkspaceResponse, GetCsrfData, GetCsrfResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeError, GetMeResponse, ListWorkspacesData, ListWorkspacesResponse, LogoutData, LogoutEverywhereData, LogoutEverywhereResponse, LogoutResponse, RefreshSessionData, RefreshSessionResponse, RequestOtpData, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
+
+export type QueryKey<TOptions extends Options> = [
+    Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
+        _id: string;
+        _infinite?: boolean;
+        tags?: ReadonlyArray<string>;
+    }
+];
+
+const createQueryKey = <TOptions extends Options>(id: string, options?: TOptions, infinite?: boolean, tags?: ReadonlyArray<string>): [
+    QueryKey<TOptions>[0]
+] => {
+    const params: QueryKey<TOptions>[0] = { _id: id, baseUrl: options?.baseUrl || (options?.client ?? client).getConfig().baseUrl } as QueryKey<TOptions>[0];
+    if (infinite) {
+        params._infinite = infinite;
+    }
+    if (tags) {
+        params.tags = tags;
+    }
+    if (options?.body) {
+        params.body = options.body;
+    }
+    if (options?.headers) {
+        params.headers = options.headers;
+    }
+    if (options?.path) {
+        params.path = options.path;
+    }
+    if (options?.query) {
+        params.query = options.query;
+    }
+    return [params];
+};
+
+export const listWorkspacesQueryKey = (options?: Options<ListWorkspacesData>) => createQueryKey('listWorkspaces', options);
+
+/**
+ * The Workspaces the caller belongs to
+ */
+export const listWorkspacesOptions = (options?: Options<ListWorkspacesData>) => queryOptions<ListWorkspacesResponse, DefaultError, ListWorkspacesResponse, ReturnType<typeof listWorkspacesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listWorkspaces({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listWorkspacesQueryKey(options)
+});
+
+/**
+ * Create a Workspace; the caller becomes its owner and it becomes active
+ */
+export const createWorkspaceMutation = (options?: Partial<Options<CreateWorkspaceData>>): UseMutationOptions<CreateWorkspaceResponse, CreateWorkspaceError, Options<CreateWorkspaceData>> => {
+    const mutationOptions: UseMutationOptions<CreateWorkspaceResponse, CreateWorkspaceError, Options<CreateWorkspaceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createWorkspace({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Switch the session's active Workspace
+ */
+export const activateWorkspaceMutation = (options?: Partial<Options<ActivateWorkspaceData>>): UseMutationOptions<ActivateWorkspaceResponse, DefaultError, Options<ActivateWorkspaceData>> => {
+    const mutationOptions: UseMutationOptions<ActivateWorkspaceResponse, DefaultError, Options<ActivateWorkspaceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await activateWorkspace({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 /**
  * Rotate the refresh token and renew the session cookies
@@ -89,39 +174,6 @@ export const logoutEverywhereMutation = (options?: Partial<Options<LogoutEverywh
         }
     };
     return mutationOptions;
-};
-
-export type QueryKey<TOptions extends Options> = [
-    Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
-        _id: string;
-        _infinite?: boolean;
-        tags?: ReadonlyArray<string>;
-    }
-];
-
-const createQueryKey = <TOptions extends Options>(id: string, options?: TOptions, infinite?: boolean, tags?: ReadonlyArray<string>): [
-    QueryKey<TOptions>[0]
-] => {
-    const params: QueryKey<TOptions>[0] = { _id: id, baseUrl: options?.baseUrl || (options?.client ?? client).getConfig().baseUrl } as QueryKey<TOptions>[0];
-    if (infinite) {
-        params._infinite = infinite;
-    }
-    if (tags) {
-        params.tags = tags;
-    }
-    if (options?.body) {
-        params.body = options.body;
-    }
-    if (options?.headers) {
-        params.headers = options.headers;
-    }
-    if (options?.path) {
-        params.path = options.path;
-    }
-    if (options?.query) {
-        params.query = options.query;
-    }
-    return [params];
 };
 
 export const getHealthQueryKey = (options?: Options<GetHealthData>) => createQueryKey('getHealth', options);

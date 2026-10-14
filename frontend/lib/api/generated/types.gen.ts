@@ -4,6 +4,19 @@ export type ClientOptions = {
     baseUrl: 'http://localhost' | (string & {});
 };
 
+export type CreateWorkspace = {
+    name: string;
+};
+
+export type WorkspaceResponse = {
+    id: string;
+    name: string;
+    /**
+     * The caller's role in this Workspace
+     */
+    role: string;
+};
+
 export type OtpVerification = {
     email: string;
     code: string;
@@ -12,6 +25,10 @@ export type OtpVerification = {
 export type UserResponse = {
     id: string;
     email: string;
+    /**
+     * The Workspace the session is acting in, if one has been chosen
+     */
+    activeWorkspaceId?: string;
 };
 
 export type OtpRequest = {
@@ -25,6 +42,76 @@ export type HealthResponse = {
 export type CsrfResponse = {
     token: string;
 };
+
+export type ListWorkspacesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/workspaces';
+};
+
+export type ListWorkspacesResponses = {
+    /**
+     * The caller's Workspaces
+     */
+    200: Array<WorkspaceResponse>;
+};
+
+export type ListWorkspacesResponse = ListWorkspacesResponses[keyof ListWorkspacesResponses];
+
+export type CreateWorkspaceData = {
+    body: CreateWorkspace;
+    path?: never;
+    query?: never;
+    url: '/api/workspaces';
+};
+
+export type CreateWorkspaceErrors = {
+    /**
+     * Invalid name
+     */
+    400: WorkspaceResponse;
+};
+
+export type CreateWorkspaceError = CreateWorkspaceErrors[keyof CreateWorkspaceErrors];
+
+export type CreateWorkspaceResponses = {
+    /**
+     * Created; the access cookie is renewed with the new active Workspace
+     */
+    201: WorkspaceResponse;
+};
+
+export type CreateWorkspaceResponse = CreateWorkspaceResponses[keyof CreateWorkspaceResponses];
+
+export type ActivateWorkspaceData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/workspaces/{id}/activate';
+};
+
+export type ActivateWorkspaceErrors = {
+    /**
+     * The session has ended
+     */
+    401: unknown;
+    /**
+     * Not a Workspace the caller belongs to
+     */
+    404: unknown;
+};
+
+export type ActivateWorkspaceResponses = {
+    /**
+     * Switched; the access cookie is renewed
+     */
+    204: void;
+};
+
+export type ActivateWorkspaceResponse = ActivateWorkspaceResponses[keyof ActivateWorkspaceResponses];
 
 export type RefreshSessionData = {
     body?: never;

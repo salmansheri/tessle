@@ -6,6 +6,9 @@ server:
 spring:
   application:
     name: Lowcodebackend
+  jpa:
+    # Platform queries must run inside a transaction, where tenant scoping is applied (ADR 0001).
+    open-in-view: false
   mail:
     host: smtp.resend.com
     port: 587

@@ -18,6 +18,10 @@ _Avoid_: Account, member (use Membership for the relationship)
 A User's role within one Workspace (owner, admin, builder, editor, viewer).
 _Avoid_: Permission, seat
 
+**Active Workspace**:
+The one Workspace a signed-in session is currently acting in. Chosen by switching, remembered for the session, and always re-checked against Membership.
+_Avoid_: Current workspace, selected tenant
+
 **Data source**:
 A connection to an external database, owned by exactly one Workspace and never shared.
 _Avoid_: Connection, database, tenant database
