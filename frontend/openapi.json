@@ -345,6 +345,101 @@
         }
       }
     },
+    "/api/apps" : {
+      "get" : {
+        "tags" : [ "apps-controller" ],
+        "summary" : "Apps in the active Workspace",
+        "operationId" : "listApps",
+        "responses" : {
+          "200" : {
+            "description" : "The Apps",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AppResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "No active workspace",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AppResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not a member of the active workspace",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AppResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "apps-controller" ],
+        "summary" : "Create an App (builders, admins and owners)",
+        "operationId" : "createApp",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateApp"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AppResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "No active workspace, or an invalid name",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AppResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller's role cannot create Apps",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AppResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/members/{userId}" : {
       "delete" : {
         "tags" : [ "members-controller" ],
@@ -565,7 +660,7 @@
             "type" : "string",
             "maxLength" : 80,
             "minLength" : 0,
-            "pattern" : "^[^\\p{Cntrl}]*$"
+            "pattern" : "^(?=.*[^\\p{Z}\\s\\p{C}])[^\\p{Cntrl}\\u0080-\\u009f]*$"
           }
         },
         "required" : [ "name" ]
@@ -691,6 +786,35 @@
           }
         },
         "required" : [ "email" ]
+      },
+      "CreateApp" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0,
+            "pattern" : "^(?=.*[^\\p{Z}\\s\\p{C}])[^\\p{Cntrl}\\u0080-\\u009f]*$"
+          }
+        },
+        "required" : [ "name" ]
+      },
+      "AppResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "createdAt", "id", "name" ]
       },
       "ChangeRole" : {
         "type" : "object",

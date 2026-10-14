@@ -18,7 +18,7 @@ import {
   removeMember,
   revokeInvitation,
 } from "@/lib/api/generated/sdk.gen";
-import { fetchSession } from "@/lib/api/session";
+import { fetchSession, withRenewal } from "@/lib/api/session";
 
 const ROLES = ["owner", "admin", "builder", "editor", "viewer"] as const;
 type RoleName = (typeof ROLES)[number];
@@ -39,13 +39,13 @@ export function MembersPanel() {
   // Called through the SDK (not the generated query options) so a failure keeps its HTTP status.
   const members = useQuery({
     queryKey: listMembersQueryKey(),
-    queryFn: async () => (await unwrap(listMembers())).data ?? [],
+    queryFn: async () => (await unwrap(withRenewal(() => listMembers()))).data ?? [],
     enabled: !!active,
     retry: false,
   });
   const invitations = useQuery({
     queryKey: listInvitationsQueryKey(),
-    queryFn: async () => (await unwrap(listInvitations())).data ?? [],
+    queryFn: async () => (await unwrap(withRenewal(() => listInvitations()))).data ?? [],
     enabled: !!active,
     retry: false,
   });
@@ -66,7 +66,7 @@ export function MembersPanel() {
     onError: setError,
     mutationFn: async (v: { userId: string; role: RoleName }) => {
       await ensureCsrf();
-      await unwrap(changeMemberRole({ path: { userId: v.userId }, body: { role: v.role } }));
+      await unwrap(withRenewal(() => changeMemberRole({ path: { userId: v.userId }, body: { role: v.role } })));
     },
     onSettled: reload,
   });
@@ -75,7 +75,7 @@ export function MembersPanel() {
     onError: setError,
     mutationFn: async (userId: string) => {
       await ensureCsrf();
-      await unwrap(removeMember({ path: { userId } }));
+      await unwrap(withRenewal(() => removeMember({ path: { userId } })));
     },
     onSettled: reload,
   });
@@ -84,7 +84,7 @@ export function MembersPanel() {
     onError: setError,
     mutationFn: async (v: { email: string; role: RoleName }) => {
       await ensureCsrf();
-      await unwrap(inviteMember({ body: v }));
+      await unwrap(withRenewal(() => inviteMember({ body: v })));
     },
     onSuccess: async () => {
       setEmail("");
@@ -96,7 +96,7 @@ export function MembersPanel() {
     onError: setError,
     mutationFn: async (id: string) => {
       await ensureCsrf();
-      await unwrap(revokeInvitation({ path: { id } }));
+      await unwrap(withRenewal(() => revokeInvitation({ path: { id } })));
     },
     onSettled: reload,
   });

@@ -8,6 +8,7 @@ import { unwrap } from "@/lib/api/errors";
 import { getMeQueryKey } from "@/lib/api/generated/@tanstack/react-query.gen";
 import { logout, logoutEverywhere } from "@/lib/api/generated/sdk.gen";
 import { fetchSession, refreshSession } from "@/lib/api/session";
+import { AppsPanel } from "@/components/apps-panel";
 import { WorkspaceSwitcher } from "@/components/workspace-switcher";
 
 const SESSION_KEY = getMeQueryKey();
@@ -87,6 +88,7 @@ export function WhoAmI() {
           Members
         </Link>
       )}
+      {data.activeWorkspaceId && <AppsPanel activeId={data.activeWorkspaceId} />}
       {signOut.isError && (
         <p role="alert" className="text-sm">
           Could not sign out. Please try again.

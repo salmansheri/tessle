@@ -59,6 +59,7 @@ class OtpSignInTests {
 	void clean() {
 		reset(mail);
 		jdbc.update("delete from otp_codes");
+		jdbc.update("delete from workspaces");
 		jdbc.update("delete from users");
 		redis.execute((org.springframework.data.redis.core.RedisCallback<Object>) c -> {
 			c.serverCommands().flushAll();

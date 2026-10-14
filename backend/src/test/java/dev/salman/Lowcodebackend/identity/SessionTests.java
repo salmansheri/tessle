@@ -56,6 +56,7 @@ class SessionTests {
 
 	@BeforeEach
 	void clean() {
+		jdbc.update("delete from workspaces");
 		jdbc.update("delete from users");
 		redis.execute((org.springframework.data.redis.core.RedisCallback<Object>) c -> {
 			c.serverCommands().flushAll();

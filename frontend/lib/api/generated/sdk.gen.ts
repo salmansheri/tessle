@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptInvitationData, AcceptInvitationErrors, AcceptInvitationResponses, ActivateWorkspaceData, ActivateWorkspaceErrors, ActivateWorkspaceResponses, ChangeMemberRoleData, ChangeMemberRoleErrors, ChangeMemberRoleResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, GetCsrfData, GetCsrfResponses, GetHealthData, GetHealthResponses, GetMeData, GetMeErrors, GetMeResponses, InviteMemberData, InviteMemberErrors, InviteMemberResponses, ListInvitationsData, ListInvitationsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListWorkspacesData, ListWorkspacesResponses, LogoutData, LogoutErrors, LogoutEverywhereData, LogoutEverywhereErrors, LogoutEverywhereResponses, LogoutResponses, RefreshSessionData, RefreshSessionErrors, RefreshSessionResponses, RemoveMemberData, RemoveMemberErrors, RemoveMemberResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
+import type { AcceptInvitationData, AcceptInvitationErrors, AcceptInvitationResponses, ActivateWorkspaceData, ActivateWorkspaceErrors, ActivateWorkspaceResponses, ChangeMemberRoleData, ChangeMemberRoleErrors, ChangeMemberRoleResponses, CreateAppData, CreateAppErrors, CreateAppResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, GetCsrfData, GetCsrfResponses, GetHealthData, GetHealthResponses, GetMeData, GetMeErrors, GetMeResponses, InviteMemberData, InviteMemberErrors, InviteMemberResponses, ListAppsData, ListAppsErrors, ListAppsResponses, ListInvitationsData, ListInvitationsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListWorkspacesData, ListWorkspacesResponses, LogoutData, LogoutErrors, LogoutEverywhereData, LogoutEverywhereErrors, LogoutEverywhereResponses, LogoutResponses, RefreshSessionData, RefreshSessionErrors, RefreshSessionResponses, RemoveMemberData, RemoveMemberErrors, RemoveMemberResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -107,6 +107,23 @@ export const logout = <ThrowOnError extends boolean = false>(options?: Options<L
  * End every session of the signed-in user
  */
 export const logoutEverywhere = <ThrowOnError extends boolean = false>(options?: Options<LogoutEverywhereData, ThrowOnError>): RequestResult<LogoutEverywhereResponses, LogoutEverywhereErrors, ThrowOnError> => (options?.client ?? client).post<LogoutEverywhereResponses, LogoutEverywhereErrors, ThrowOnError>({ url: '/api/auth/logout-all', ...options });
+
+/**
+ * Apps in the active Workspace
+ */
+export const listApps = <ThrowOnError extends boolean = false>(options?: Options<ListAppsData, ThrowOnError>): RequestResult<ListAppsResponses, ListAppsErrors, ThrowOnError> => (options?.client ?? client).get<ListAppsResponses, ListAppsErrors, ThrowOnError>({ url: '/api/apps', ...options });
+
+/**
+ * Create an App (builders, admins and owners)
+ */
+export const createApp = <ThrowOnError extends boolean = false>(options: Options<CreateAppData, ThrowOnError>): RequestResult<CreateAppResponses, CreateAppErrors, ThrowOnError> => (options.client ?? client).post<CreateAppResponses, CreateAppErrors, ThrowOnError>({
+    url: '/api/apps',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * Remove a member (owners and admins; only owners remove owners)

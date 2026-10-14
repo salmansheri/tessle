@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { acceptInvitation, activateWorkspace, changeMemberRole, createWorkspace, getCsrf, getHealth, getMe, inviteMember, listInvitations, listMembers, listWorkspaces, logout, logoutEverywhere, type Options, refreshSession, removeMember, requestOtp, revokeInvitation, verifyOtp } from '../sdk.gen';
-import type { AcceptInvitationData, AcceptInvitationError, AcceptInvitationResponse, ActivateWorkspaceData, ActivateWorkspaceResponse, ChangeMemberRoleData, ChangeMemberRoleResponse, CreateWorkspaceData, CreateWorkspaceError, CreateWorkspaceResponse, GetCsrfData, GetCsrfResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeError, GetMeResponse, InviteMemberData, InviteMemberError, InviteMemberResponse, ListInvitationsData, ListInvitationsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListWorkspacesData, ListWorkspacesResponse, LogoutData, LogoutEverywhereData, LogoutEverywhereResponse, LogoutResponse, RefreshSessionData, RefreshSessionResponse, RemoveMemberData, RemoveMemberResponse, RequestOtpData, RevokeInvitationData, RevokeInvitationResponse, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
+import { acceptInvitation, activateWorkspace, changeMemberRole, createApp, createWorkspace, getCsrf, getHealth, getMe, inviteMember, listApps, listInvitations, listMembers, listWorkspaces, logout, logoutEverywhere, type Options, refreshSession, removeMember, requestOtp, revokeInvitation, verifyOtp } from '../sdk.gen';
+import type { AcceptInvitationData, AcceptInvitationError, AcceptInvitationResponse, ActivateWorkspaceData, ActivateWorkspaceResponse, ChangeMemberRoleData, ChangeMemberRoleResponse, CreateAppData, CreateAppError, CreateAppResponse, CreateWorkspaceData, CreateWorkspaceError, CreateWorkspaceResponse, GetCsrfData, GetCsrfResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeError, GetMeResponse, InviteMemberData, InviteMemberError, InviteMemberResponse, ListAppsData, ListAppsError, ListAppsResponse, ListInvitationsData, ListInvitationsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListWorkspacesData, ListWorkspacesResponse, LogoutData, LogoutEverywhereData, LogoutEverywhereResponse, LogoutResponse, RefreshSessionData, RefreshSessionResponse, RemoveMemberData, RemoveMemberResponse, RequestOtpData, RevokeInvitationData, RevokeInvitationResponse, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -218,6 +218,41 @@ export const logoutEverywhereMutation = (options?: Partial<Options<LogoutEverywh
     const mutationOptions: UseMutationOptions<LogoutEverywhereResponse, DefaultError, Options<LogoutEverywhereData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await logoutEverywhere({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listAppsQueryKey = (options?: Options<ListAppsData>) => createQueryKey('listApps', options);
+
+/**
+ * Apps in the active Workspace
+ */
+export const listAppsOptions = (options?: Options<ListAppsData>) => queryOptions<ListAppsResponse, ListAppsError, ListAppsResponse, ReturnType<typeof listAppsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listApps({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listAppsQueryKey(options)
+});
+
+/**
+ * Create an App (builders, admins and owners)
+ */
+export const createAppMutation = (options?: Partial<Options<CreateAppData>>): UseMutationOptions<CreateAppResponse, CreateAppError, Options<CreateAppData>> => {
+    const mutationOptions: UseMutationOptions<CreateAppResponse, CreateAppError, Options<CreateAppData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createApp({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

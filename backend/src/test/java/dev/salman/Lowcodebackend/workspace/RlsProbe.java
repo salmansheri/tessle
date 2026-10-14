@@ -47,4 +47,25 @@ class RlsProbe {
 		return jdbc.sql("delete from memberships where workspace_id = ? and user_id = ?").params(workspace, user).update();
 	}
 
+	@Transactional(readOnly = true)
+	List<String> allAppNames() {
+		return jdbc.sql("select name from apps order by name").query(String.class).list();
+	}
+
+	@Transactional
+	void insertApp(UUID workspace, String name, UUID createdBy) {
+		jdbc.sql("insert into apps (id, workspace_id, name, created_by) values (?, ?, ?, ?)")
+				.params(UUID.randomUUID(), workspace, name, createdBy).update();
+	}
+
+	@Transactional
+	int renameApps(String newName) {
+		return jdbc.sql("update apps set name = ?").params(newName).update();
+	}
+
+	@Transactional
+	int deleteAllApps() {
+		return jdbc.sql("delete from apps").update();
+	}
+
 }

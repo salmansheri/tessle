@@ -48,3 +48,12 @@ export async function fetchSession() {
   }
   return result.data ?? null;
 }
+
+/** Runs an SDK call, and if the access cookie has expired, renews the session once and retries. */
+export async function withRenewal<T extends { response?: Response }>(call: () => Promise<T>): Promise<T> {
+  const result = await call();
+  if (result.response?.status === 401 && (await refreshSession())) {
+    return call();
+  }
+  return result;
+}

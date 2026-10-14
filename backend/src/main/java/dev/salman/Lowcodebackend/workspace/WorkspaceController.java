@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = "/api/workspaces", produces = "application/json")
 class WorkspaceController {
 
-	record CreateWorkspace(@NotBlank @Size(max = 80) @Pattern(regexp = "^[^\\p{Cntrl}]*$", message = "must not contain control characters") String name) {
+	record CreateWorkspace(@NotBlank @Size(max = 80) @Pattern(regexp = Names.PATTERN, message = Names.MESSAGE) String name) {
 	}
 
 	record WorkspaceResponse(@Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID id,

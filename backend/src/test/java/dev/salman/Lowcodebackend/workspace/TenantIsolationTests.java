@@ -198,4 +198,55 @@ class TenantIsolationTests {
 		assertThat(probe.deleteMembership(wsAlice, alice)).isZero();
 	}
 
+	@Test
+	void appsAreScopedToTheActiveWorkspaceAndOnlyBuildersAndAboveCanWriteThem() {
+		UUID[] people = addAdminAndViewer();
+		UUID dave = people[0];
+		UUID erin = people[1];
+		admin.update("insert into apps (id, workspace_id, name, created_by) values (?, ?, 'Alice app', ?), (?, ?, 'Bob app', ?)",
+				UUID.randomUUID(), wsAlice, alice, UUID.randomUUID(), wsBob, bob);
+
+		actAs(alice, wsAlice);
+		assertThat(probe.allAppNames()).as("a query without any filter").containsExactly("Alice app");
+
+		actAs(alice, null);
+		assertThat(probe.allAppNames()).as("no active workspace").isEmpty();
+
+		actAs(alice, wsBob);
+		assertThat(probe.allAppNames()).as("forged active workspace").isEmpty();
+		assertThatThrownBy(() -> probe.insertApp(wsBob, "Planted", alice)).isInstanceOf(DataAccessException.class);
+
+		actAs(erin, wsAlice); // viewer
+		assertThat(probe.allAppNames()).containsExactly("Alice app");
+		assertThatThrownBy(() -> probe.insertApp(wsAlice, "Viewer app", erin)).isInstanceOf(DataAccessException.class);
+
+		actAs(dave, wsAlice); // admin
+		probe.insertApp(wsAlice, "Admin app", dave);
+		assertThat(probe.allAppNames()).containsExactlyInAnyOrder("Alice app", "Admin app");
+	}
+
+	@Test
+	void onlyBuildersAndAboveCanChangeOrDeleteAppsAndOnlyInTheirActiveWorkspace() {
+		UUID[] people = addAdminAndViewer();
+		UUID dave = people[0];
+		UUID erin = people[1];
+		admin.update("insert into apps (id, workspace_id, name, created_by) values (?, ?, 'Alice app', ?), (?, ?, 'Bob app', ?)",
+				UUID.randomUUID(), wsAlice, alice, UUID.randomUUID(), wsBob, bob);
+
+		actAs(erin, wsAlice); // viewer
+		assertThat(probe.renameApps("Hacked")).isZero();
+		assertThat(probe.deleteAllApps()).isZero();
+
+		actAs(dave, wsAlice); // admin: may change Alice's app, can't even see Bob's
+		assertThat(probe.renameApps("Renamed")).isEqualTo(1);
+
+		actAs(alice, wsBob); // forged active workspace
+		assertThat(probe.renameApps("Hacked")).isZero();
+		assertThat(probe.deleteAllApps()).isZero();
+
+		actAs(alice, wsAlice);
+		assertThat(probe.deleteAllApps()).isEqualTo(1);
+		assertThat(admin.queryForList("select name from apps", String.class)).containsExactly("Bob app");
+	}
+
 }

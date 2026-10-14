@@ -56,6 +56,16 @@ export type OtpRequest = {
     email: string;
 };
 
+export type CreateApp = {
+    name: string;
+};
+
+export type AppResponse = {
+    id: string;
+    name: string;
+    createdAt: string;
+};
+
 export type ChangeRole = {
     role: string;
 };
@@ -344,6 +354,64 @@ export type LogoutEverywhereResponses = {
 };
 
 export type LogoutEverywhereResponse = LogoutEverywhereResponses[keyof LogoutEverywhereResponses];
+
+export type ListAppsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/apps';
+};
+
+export type ListAppsErrors = {
+    /**
+     * No active workspace
+     */
+    400: Array<AppResponse>;
+    /**
+     * Not a member of the active workspace
+     */
+    403: Array<AppResponse>;
+};
+
+export type ListAppsError = ListAppsErrors[keyof ListAppsErrors];
+
+export type ListAppsResponses = {
+    /**
+     * The Apps
+     */
+    200: Array<AppResponse>;
+};
+
+export type ListAppsResponse = ListAppsResponses[keyof ListAppsResponses];
+
+export type CreateAppData = {
+    body: CreateApp;
+    path?: never;
+    query?: never;
+    url: '/api/apps';
+};
+
+export type CreateAppErrors = {
+    /**
+     * No active workspace, or an invalid name
+     */
+    400: AppResponse;
+    /**
+     * The caller's role cannot create Apps
+     */
+    403: AppResponse;
+};
+
+export type CreateAppError = CreateAppErrors[keyof CreateAppErrors];
+
+export type CreateAppResponses = {
+    /**
+     * Created
+     */
+    201: AppResponse;
+};
+
+export type CreateAppResponse = CreateAppResponses[keyof CreateAppResponses];
 
 export type RemoveMemberData = {
     body?: never;
