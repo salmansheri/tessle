@@ -9,6 +9,93 @@
     "description" : "Generated server url"
   } ],
   "paths" : {
+    "/api/auth/otp/verify" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "summary" : "Exchange an emailed code for a session",
+        "operationId" : "verifyOtp",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OtpVerification"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Signed in; session cookies set",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Malformed email or code",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Invalid, expired or used code",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "Rate limited",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/otp/request" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "summary" : "Email a sign-in code (202 whether or not the email has an account)",
+        "operationId" : "requestOtp",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OtpRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Code emailed (or silently ignored for unknown addresses)"
+          },
+          "400" : {
+            "description" : "Malformed email"
+          },
+          "429" : {
+            "description" : "Rate limited"
+          }
+        }
+      }
+    },
     "/api/health" : {
       "get" : {
         "tags" : [ "health-controller" ],
@@ -27,10 +114,98 @@
           }
         }
       }
+    },
+    "/api/auth/me" : {
+      "get" : {
+        "tags" : [ "auth-controller" ],
+        "summary" : "The signed-in user",
+        "operationId" : "getMe",
+        "responses" : {
+          "200" : {
+            "description" : "The signed-in user",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not signed in",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/csrf" : {
+      "get" : {
+        "tags" : [ "auth-controller" ],
+        "summary" : "Start a CSRF double-submit exchange",
+        "operationId" : "getCsrf",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CsrfResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components" : {
     "schemas" : {
+      "OtpVerification" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "minLength" : 1
+          },
+          "code" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "\\d{6}"
+          }
+        },
+        "required" : [ "code", "email" ]
+      },
+      "UserResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "email" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "id" ]
+      },
+      "OtpRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "email" ]
+      },
       "HealthResponse" : {
         "type" : "object",
         "properties" : {
@@ -39,6 +214,15 @@
           }
         },
         "required" : [ "status" ]
+      },
+      "CsrfResponse" : {
+        "type" : "object",
+        "properties" : {
+          "token" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "token" ]
       }
     }
   }

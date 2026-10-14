@@ -3,6 +3,7 @@ package dev.salman.Lowcodebackend;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.test.context.DynamicPropertyRegistrar;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
@@ -27,6 +28,15 @@ public class TestcontainersConfiguration {
 	@ServiceConnection(name = "redis")
 	GenericContainer<?> redis() {
 		return new GenericContainer<>(DockerImageName.parse("redis:8")).withExposedPorts(6379);
+	}
+
+	/** Secrets the app refuses to start without. Test-only values. */
+	@Bean
+	DynamicPropertyRegistrar testSecrets() {
+		return registry -> {
+			registry.add("tessle.jwt.secret", () -> "test-only-jwt-secret-at-least-32-bytes-long!!");
+			registry.add("tessle.otp.secret", () -> "test-only-otp-secret-at-least-32-bytes-long!!");
+		};
 	}
 
 }

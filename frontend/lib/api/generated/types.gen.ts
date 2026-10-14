@@ -4,8 +4,84 @@ export type ClientOptions = {
     baseUrl: 'http://localhost' | (string & {});
 };
 
+export type OtpVerification = {
+    email: string;
+    code: string;
+};
+
+export type UserResponse = {
+    id: string;
+    email: string;
+};
+
+export type OtpRequest = {
+    email: string;
+};
+
 export type HealthResponse = {
     status: string;
+};
+
+export type CsrfResponse = {
+    token: string;
+};
+
+export type VerifyOtpData = {
+    body: OtpVerification;
+    path?: never;
+    query?: never;
+    url: '/api/auth/otp/verify';
+};
+
+export type VerifyOtpErrors = {
+    /**
+     * Malformed email or code
+     */
+    400: UserResponse;
+    /**
+     * Invalid, expired or used code
+     */
+    401: UserResponse;
+    /**
+     * Rate limited
+     */
+    429: UserResponse;
+};
+
+export type VerifyOtpError = VerifyOtpErrors[keyof VerifyOtpErrors];
+
+export type VerifyOtpResponses = {
+    /**
+     * Signed in; session cookies set
+     */
+    200: UserResponse;
+};
+
+export type VerifyOtpResponse = VerifyOtpResponses[keyof VerifyOtpResponses];
+
+export type RequestOtpData = {
+    body: OtpRequest;
+    path?: never;
+    query?: never;
+    url: '/api/auth/otp/request';
+};
+
+export type RequestOtpErrors = {
+    /**
+     * Malformed email
+     */
+    400: unknown;
+    /**
+     * Rate limited
+     */
+    429: unknown;
+};
+
+export type RequestOtpResponses = {
+    /**
+     * Code emailed (or silently ignored for unknown addresses)
+     */
+    202: unknown;
 };
 
 export type GetHealthData = {
@@ -23,3 +99,44 @@ export type GetHealthResponses = {
 };
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
+
+export type GetMeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/me';
+};
+
+export type GetMeErrors = {
+    /**
+     * Not signed in
+     */
+    401: UserResponse;
+};
+
+export type GetMeError = GetMeErrors[keyof GetMeErrors];
+
+export type GetMeResponses = {
+    /**
+     * The signed-in user
+     */
+    200: UserResponse;
+};
+
+export type GetMeResponse = GetMeResponses[keyof GetMeResponses];
+
+export type GetCsrfData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/csrf';
+};
+
+export type GetCsrfResponses = {
+    /**
+     * OK
+     */
+    200: CsrfResponse;
+};
+
+export type GetCsrfResponse = GetCsrfResponses[keyof GetCsrfResponses];

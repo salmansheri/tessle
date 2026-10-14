@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Tessle backend",
+            "request": "launch",
+            "mainClass": "dev.salman.Lowcodebackend.LowcodebackendApplication",
+            "projectName": "Lowcodebackend",
+            "cwd": "${workspaceFolder}/backend",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
