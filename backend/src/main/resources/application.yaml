@@ -1,3 +1,32 @@
 spring:
   application:
     name: Lowcodebackend
+  mail:
+    host: smtp.resend.com
+    port: 587
+    username: resend
+    password: ${RESEND_SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      # Without timeouts a stalled SMTP connection blocks the listener thread forever.
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 15000
+      mail.smtp.writetimeout: 15000
+  rabbitmq:
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-retries: 4
+          initial-interval: 1s
+          multiplier: 2.0
+          max-interval: 30s
+
+tessle:
+  mail:
+    from: ${MAIL_FROM:onboarding@resend.dev}
+
+logging:
+  pattern:
+    level: "%5p [%X{traceId:-}]"

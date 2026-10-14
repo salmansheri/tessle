@@ -18,7 +18,9 @@ Monorepo:
 - Build / test all: `./mvnw verify`
 - Single test: `./mvnw test -Dtest=Class#method`
 
-Tests use Testcontainers (`TestcontainersConfiguration`, `@ServiceConnection`) against real Postgres, Redis and RabbitMQ, so Docker must be running. Migrations are Flyway files under `src/main/resources/db/migration`. Lombok and `spring-boot-configuration-processor` are wired as annotation processors in `pom.xml`; keep that when editing the compiler plugin.
+Tests use Testcontainers (`TestcontainersConfiguration`, `@ServiceConnection`) against real Postgres, Redis and RabbitMQ, so Docker must be running. Mail: callers use `MailQueue.enqueue(MailMessage.of(...))`; a RabbitMQ consumer sends via `JavaMailSender` (Resend SMTP) with retries, a dead-letter queue (`mail.send.dlq`) and Redis-based idempotency. Env vars are in `.env.example`; set `TESSLE_MAIL_SMOKE_TO` to send one real test email at startup. Every request gets an `X-Trace-Id` (MDC `traceId`) that is carried into queued jobs.
+
+Migrations are Flyway files under `src/main/resources/db/migration`. Lombok and `spring-boot-configuration-processor` are wired as annotation processors in `pom.xml`; keep that when editing the compiler plugin.
 
 ## Frontend commands (run in `frontend/`)
 
@@ -29,7 +31,7 @@ Tests use Testcontainers (`TestcontainersConfiguration`, `@ServiceConnection`) a
 
 **Important:** `frontend/AGENTS.md` warns this Next.js version has breaking changes from training data. Read the relevant guide in `frontend/node_modules/next/dist/docs/` before writing Next.js code.
 
-CI (`.github/workflows/ci.yml`) runs backend `verify` and frontend lint + build.
+CI (`.github/workflows/ci.yml`) runs backend `verify` and frontend generate-drift check, typecheck, lint and build.
 
 ## Agent skills
 
