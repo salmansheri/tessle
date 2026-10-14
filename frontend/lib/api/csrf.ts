@@ -1,16 +1,9 @@
+import { readCookie } from "@/lib/cookies";
 import { client } from "./generated/client.gen";
 import { getCsrf } from "./generated/sdk.gen";
 
 const COOKIE = "XSRF-TOKEN";
 const HEADER = "X-XSRF-TOKEN";
-
-function readCookie(name: string): string | undefined {
-  if (typeof document === "undefined") return undefined;
-  const hit = document.cookie
-    .split("; ")
-    .find((c) => c.startsWith(`${name}=`));
-  return hit ? decodeURIComponent(hit.slice(name.length + 1)) : undefined;
-}
 
 // Double-submit CSRF: echo the readable cookie back as a header on every state-changing request.
 client.interceptors.request.use((request) => {

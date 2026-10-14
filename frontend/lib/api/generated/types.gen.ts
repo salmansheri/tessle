@@ -26,6 +26,29 @@ export type CsrfResponse = {
     token: string;
 };
 
+export type RefreshSessionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/refresh';
+};
+
+export type RefreshSessionErrors = {
+    /**
+     * Refresh token missing, expired, revoked or reused
+     */
+    401: unknown;
+};
+
+export type RefreshSessionResponses = {
+    /**
+     * New cookies set
+     */
+    204: void;
+};
+
+export type RefreshSessionResponse = RefreshSessionResponses[keyof RefreshSessionResponses];
+
 export type VerifyOtpData = {
     body: OtpVerification;
     path?: never;
@@ -83,6 +106,52 @@ export type RequestOtpResponses = {
      */
     202: unknown;
 };
+
+export type LogoutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/logout';
+};
+
+export type LogoutErrors = {
+    /**
+     * Not signed in
+     */
+    401: unknown;
+};
+
+export type LogoutResponses = {
+    /**
+     * Session ended; cookies cleared
+     */
+    204: void;
+};
+
+export type LogoutResponse = LogoutResponses[keyof LogoutResponses];
+
+export type LogoutEverywhereData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/logout-all';
+};
+
+export type LogoutEverywhereErrors = {
+    /**
+     * Not signed in
+     */
+    401: unknown;
+};
+
+export type LogoutEverywhereResponses = {
+    /**
+     * All sessions ended; cookies cleared
+     */
+    204: void;
+};
+
+export type LogoutEverywhereResponse = LogoutEverywhereResponses[keyof LogoutEverywhereResponses];
 
 export type GetHealthData = {
     body?: never;

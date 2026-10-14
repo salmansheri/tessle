@@ -9,6 +9,21 @@
     "description" : "Generated server url"
   } ],
   "paths" : {
+    "/api/auth/refresh" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "summary" : "Rotate the refresh token and renew the session cookies",
+        "operationId" : "refreshSession",
+        "responses" : {
+          "204" : {
+            "description" : "New cookies set"
+          },
+          "401" : {
+            "description" : "Refresh token missing, expired, revoked or reused"
+          }
+        }
+      }
+    },
     "/api/auth/otp/verify" : {
       "post" : {
         "tags" : [ "auth-controller" ],
@@ -92,6 +107,36 @@
           },
           "429" : {
             "description" : "Rate limited"
+          }
+        }
+      }
+    },
+    "/api/auth/logout" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "summary" : "End the current session",
+        "operationId" : "logout",
+        "responses" : {
+          "204" : {
+            "description" : "Session ended; cookies cleared"
+          },
+          "401" : {
+            "description" : "Not signed in"
+          }
+        }
+      }
+    },
+    "/api/auth/logout-all" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "summary" : "End every session of the signed-in user",
+        "operationId" : "logoutEverywhere",
+        "responses" : {
+          "204" : {
+            "description" : "All sessions ended; cookies cleared"
+          },
+          "401" : {
+            "description" : "Not signed in"
           }
         }
       }

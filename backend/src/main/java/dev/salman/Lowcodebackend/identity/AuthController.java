@@ -1,6 +1,7 @@
 package dev.salman.Lowcodebackend.identity;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.UUID;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -92,11 +94,39 @@ class AuthController {
 		}
 		return otp.verify(email, body.code()).map(user -> {
 			ResponseEntity.BodyBuilder ok = ResponseEntity.ok();
-			for (ResponseCookie cookie : tokens.issue(user)) {
+			for (ResponseCookie cookie : tokens.start(user)) {
 				ok.header(HttpHeaders.SET_COOKIE, cookie.toString());
 			}
 			return ok.body(new UserResponse(user.getId(), user.getEmail()));
 		}).orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+	}
+
+	@Operation(operationId = "refreshSession", summary = "Rotate the refresh token and renew the session cookies")
+	@ApiResponse(responseCode = "204", description = "New cookies set")
+	@ApiResponse(responseCode = "401", description = "Refresh token missing, expired, revoked or reused")
+	@PostMapping("/refresh")
+	ResponseEntity<Void> refresh(@Parameter(hidden = true) @CookieValue(name = TokenService.REFRESH_COOKIE, required = false) String refreshToken) {
+		return Optional.ofNullable(refreshToken).flatMap(tokens::rotate)
+				.map(cookies -> withCookies(ResponseEntity.noContent(), cookies))
+				.orElseGet(() -> withCookies(ResponseEntity.status(HttpStatus.UNAUTHORIZED), tokens.cleared()));
+	}
+
+	@Operation(operationId = "logout", summary = "End the current session")
+	@ApiResponse(responseCode = "204", description = "Session ended; cookies cleared")
+	@ApiResponse(responseCode = "401", description = "Not signed in")
+	@PostMapping("/logout")
+	ResponseEntity<Void> logout(@Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt) {
+		tokens.revoke(jwt.getClaimAsString(TokenService.SESSION_CLAIM));
+		return withCookies(ResponseEntity.noContent(), tokens.cleared());
+	}
+
+	@Operation(operationId = "logoutEverywhere", summary = "End every session of the signed-in user")
+	@ApiResponse(responseCode = "204", description = "All sessions ended; cookies cleared")
+	@ApiResponse(responseCode = "401", description = "Not signed in")
+	@PostMapping("/logout-all")
+	ResponseEntity<Void> logoutEverywhere(@Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt) {
+		tokens.revokeAll(UUID.fromString(jwt.getSubject()));
+		return withCookies(ResponseEntity.noContent(), tokens.cleared());
 	}
 
 	@Operation(operationId = "getMe", summary = "The signed-in user")
@@ -108,6 +138,13 @@ class AuthController {
 		return users.findById(UUID.fromString(jwt.getSubject()))
 				.map(user -> ResponseEntity.ok(new UserResponse(user.getId(), user.getEmail())))
 				.orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+	}
+
+	private static ResponseEntity<Void> withCookies(ResponseEntity.HeadersBuilder<?> builder, ResponseCookie[] cookies) {
+		for (ResponseCookie cookie : cookies) {
+			builder.header(HttpHeaders.SET_COOKIE, cookie.toString());
+		}
+		return builder.build();
 	}
 
 	private static String normalize(String email) {

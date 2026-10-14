@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetCsrfData, GetCsrfResponses, GetHealthData, GetHealthResponses, GetMeData, GetMeErrors, GetMeResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
+import type { GetCsrfData, GetCsrfResponses, GetHealthData, GetHealthResponses, GetMeData, GetMeErrors, GetMeResponses, LogoutData, LogoutErrors, LogoutEverywhereData, LogoutEverywhereErrors, LogoutEverywhereResponses, LogoutResponses, RefreshSessionData, RefreshSessionErrors, RefreshSessionResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -17,6 +17,11 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
+
+/**
+ * Rotate the refresh token and renew the session cookies
+ */
+export const refreshSession = <ThrowOnError extends boolean = false>(options?: Options<RefreshSessionData, ThrowOnError>): RequestResult<RefreshSessionResponses, RefreshSessionErrors, ThrowOnError> => (options?.client ?? client).post<RefreshSessionResponses, RefreshSessionErrors, ThrowOnError>({ url: '/api/auth/refresh', ...options });
 
 /**
  * Exchange an emailed code for a session
@@ -41,6 +46,16 @@ export const requestOtp = <ThrowOnError extends boolean = false>(options: Option
         ...options.headers
     }
 });
+
+/**
+ * End the current session
+ */
+export const logout = <ThrowOnError extends boolean = false>(options?: Options<LogoutData, ThrowOnError>): RequestResult<LogoutResponses, LogoutErrors, ThrowOnError> => (options?.client ?? client).post<LogoutResponses, LogoutErrors, ThrowOnError>({ url: '/api/auth/logout', ...options });
+
+/**
+ * End every session of the signed-in user
+ */
+export const logoutEverywhere = <ThrowOnError extends boolean = false>(options?: Options<LogoutEverywhereData, ThrowOnError>): RequestResult<LogoutEverywhereResponses, LogoutEverywhereErrors, ThrowOnError> => (options?.client ?? client).post<LogoutEverywhereResponses, LogoutEverywhereErrors, ThrowOnError>({ url: '/api/auth/logout-all', ...options });
 
 /**
  * Liveness check

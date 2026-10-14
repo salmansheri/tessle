@@ -3,8 +3,25 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { getCsrf, getHealth, getMe, type Options, requestOtp, verifyOtp } from '../sdk.gen';
-import type { GetCsrfData, GetCsrfResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeError, GetMeResponse, RequestOtpData, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
+import { getCsrf, getHealth, getMe, logout, logoutEverywhere, type Options, refreshSession, requestOtp, verifyOtp } from '../sdk.gen';
+import type { GetCsrfData, GetCsrfResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeError, GetMeResponse, LogoutData, LogoutEverywhereData, LogoutEverywhereResponse, LogoutResponse, RefreshSessionData, RefreshSessionResponse, RequestOtpData, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
+
+/**
+ * Rotate the refresh token and renew the session cookies
+ */
+export const refreshSessionMutation = (options?: Partial<Options<RefreshSessionData>>): UseMutationOptions<RefreshSessionResponse, DefaultError, Options<RefreshSessionData>> => {
+    const mutationOptions: UseMutationOptions<RefreshSessionResponse, DefaultError, Options<RefreshSessionData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await refreshSession({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
 
 /**
  * Exchange an emailed code for a session
@@ -30,6 +47,40 @@ export const requestOtpMutation = (options?: Partial<Options<RequestOtpData>>): 
     const mutationOptions: UseMutationOptions<unknown, DefaultError, Options<RequestOtpData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await requestOtp({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * End the current session
+ */
+export const logoutMutation = (options?: Partial<Options<LogoutData>>): UseMutationOptions<LogoutResponse, DefaultError, Options<LogoutData>> => {
+    const mutationOptions: UseMutationOptions<LogoutResponse, DefaultError, Options<LogoutData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await logout({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * End every session of the signed-in user
+ */
+export const logoutEverywhereMutation = (options?: Partial<Options<LogoutEverywhereData>>): UseMutationOptions<LogoutEverywhereResponse, DefaultError, Options<LogoutEverywhereData>> => {
+    const mutationOptions: UseMutationOptions<LogoutEverywhereResponse, DefaultError, Options<LogoutEverywhereData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await logoutEverywhere({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

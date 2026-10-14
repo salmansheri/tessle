@@ -14,7 +14,7 @@ public class CookieBearerTokenResolver implements BearerTokenResolver {
 	 * public sign-in endpoints never look at it.
 	 */
 	private static boolean isPublic(String path) {
-		return path.equals("/api/auth/csrf") || path.startsWith("/api/auth/otp/");
+		return path.equals("/api/auth/csrf") || path.equals(TokenService.REFRESH_PATH) || path.startsWith("/api/auth/otp/");
 	}
 
 	@Override
