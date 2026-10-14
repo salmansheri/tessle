@@ -7,14 +7,14 @@ import { ensureCsrf } from "@/lib/api/csrf";
 import { ApiStatusError, unwrap } from "@/lib/api/errors";
 import {
   getMeQueryKey,
-  listInvitationsOptions,
   listInvitationsQueryKey,
-  listMembersOptions,
   listMembersQueryKey,
 } from "@/lib/api/generated/@tanstack/react-query.gen";
 import {
   changeMemberRole,
   inviteMember,
+  listInvitations,
+  listMembers,
   removeMember,
   revokeInvitation,
 } from "@/lib/api/generated/sdk.gen";
@@ -36,8 +36,19 @@ export function MembersPanel() {
   const queryClient = useQueryClient();
   const session = useQuery({ queryKey: getMeQueryKey(), queryFn: fetchSession, retry: false });
   const active = session.data?.activeWorkspaceId;
-  const members = useQuery({ ...listMembersOptions(), enabled: !!active, retry: false });
-  const invitations = useQuery({ ...listInvitationsOptions(), enabled: !!active, retry: false });
+  // Called through the SDK (not the generated query options) so a failure keeps its HTTP status.
+  const members = useQuery({
+    queryKey: listMembersQueryKey(),
+    queryFn: async () => (await unwrap(listMembers())).data ?? [],
+    enabled: !!active,
+    retry: false,
+  });
+  const invitations = useQuery({
+    queryKey: listInvitationsQueryKey(),
+    queryFn: async () => (await unwrap(listInvitations())).data ?? [],
+    enabled: !!active,
+    retry: false,
+  });
 
   // One message for the latest action: cleared when a new action starts, so an old failure never lingers.
   const [error, setError] = useState<unknown>(null);
@@ -106,7 +117,13 @@ export function MembersPanel() {
   return (
     <>
       <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
-      {members.isError && <p role="alert">You are not a member of this workspace.</p>}
+      {members.isError && (
+        <p role="alert">
+          {members.error instanceof ApiStatusError && members.error.status === 403
+            ? "You are not a member of this workspace. Switch to one you belong to on the home page."
+            : "Could not load the members. If this keeps happening, restart the backend and reload."}
+        </p>
+      )}
 
       <ul className="flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800">
         {members.data?.map((m) => (
