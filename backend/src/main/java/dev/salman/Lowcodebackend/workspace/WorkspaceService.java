@@ -1,6 +1,7 @@
 package dev.salman.Lowcodebackend.workspace;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -46,6 +47,12 @@ class WorkspaceService {
 	boolean isMember(UUID user, UUID workspace) {
 		return jdbc.sql("select exists (select 1 from memberships where workspace_id = ? and user_id = ?)")
 				.params(workspace, user).query(Boolean.class).single();
+	}
+
+	@Transactional(readOnly = true)
+	Optional<String> roleOf(UUID user, UUID workspace) {
+		return jdbc.sql("select role from memberships where workspace_id = ? and user_id = ?")
+				.params(workspace, user).query(String.class).optional();
 	}
 
 }

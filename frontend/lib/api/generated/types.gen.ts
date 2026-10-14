@@ -17,6 +17,27 @@ export type WorkspaceResponse = {
     role: string;
 };
 
+export type InviteRequest = {
+    email: string;
+    role: string;
+};
+
+export type InvitationResponse = {
+    id: string;
+    email: string;
+    role: string;
+    expiresAt: string;
+};
+
+export type AcceptRequest = {
+    token: string;
+};
+
+export type AcceptedResponse = {
+    workspaceId: string;
+    role: string;
+};
+
 export type OtpVerification = {
     email: string;
     code: string;
@@ -33,6 +54,16 @@ export type UserResponse = {
 
 export type OtpRequest = {
     email: string;
+};
+
+export type ChangeRole = {
+    role: string;
+};
+
+export type MemberResponse = {
+    userId: string;
+    email: string;
+    role: 'owner' | 'admin' | 'builder' | 'editor' | 'viewer';
 };
 
 export type HealthResponse = {
@@ -112,6 +143,80 @@ export type ActivateWorkspaceResponses = {
 };
 
 export type ActivateWorkspaceResponse = ActivateWorkspaceResponses[keyof ActivateWorkspaceResponses];
+
+export type ListInvitationsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/invitations';
+};
+
+export type ListInvitationsResponses = {
+    /**
+     * Pending invitations
+     */
+    200: Array<InvitationResponse>;
+};
+
+export type ListInvitationsResponse = ListInvitationsResponses[keyof ListInvitationsResponses];
+
+export type InviteMemberData = {
+    body: InviteRequest;
+    path?: never;
+    query?: never;
+    url: '/api/invitations';
+};
+
+export type InviteMemberErrors = {
+    /**
+     * Not allowed
+     */
+    403: InvitationResponse;
+    /**
+     * Already a member, or a pending owner invitation exists
+     */
+    409: InvitationResponse;
+    /**
+     * Too many invitations sent recently
+     */
+    429: InvitationResponse;
+};
+
+export type InviteMemberError = InviteMemberErrors[keyof InviteMemberErrors];
+
+export type InviteMemberResponses = {
+    /**
+     * Invitation sent
+     */
+    201: InvitationResponse;
+};
+
+export type InviteMemberResponse = InviteMemberResponses[keyof InviteMemberResponses];
+
+export type AcceptInvitationData = {
+    body: AcceptRequest;
+    path?: never;
+    query?: never;
+    url: '/api/invitations/accept';
+};
+
+export type AcceptInvitationErrors = {
+    /**
+     * Unknown, used, expired, or meant for someone else
+     */
+    404: AcceptedResponse;
+};
+
+export type AcceptInvitationError = AcceptInvitationErrors[keyof AcceptInvitationErrors];
+
+export type AcceptInvitationResponses = {
+    /**
+     * Joined; the joined Workspace becomes active
+     */
+    200: AcceptedResponse;
+};
+
+export type AcceptInvitationResponse = AcceptInvitationResponses[keyof AcceptInvitationResponses];
 
 export type RefreshSessionData = {
     body?: never;
@@ -240,6 +345,101 @@ export type LogoutEverywhereResponses = {
 
 export type LogoutEverywhereResponse = LogoutEverywhereResponses[keyof LogoutEverywhereResponses];
 
+export type RemoveMemberData = {
+    body?: never;
+    path: {
+        userId: string;
+    };
+    query?: never;
+    url: '/api/members/{userId}';
+};
+
+export type RemoveMemberErrors = {
+    /**
+     * Not allowed
+     */
+    403: unknown;
+    /**
+     * Not a member
+     */
+    404: unknown;
+    /**
+     * The workspace would be left without an owner
+     */
+    409: unknown;
+};
+
+export type RemoveMemberResponses = {
+    /**
+     * Removed
+     */
+    204: void;
+};
+
+export type RemoveMemberResponse = RemoveMemberResponses[keyof RemoveMemberResponses];
+
+export type ChangeMemberRoleData = {
+    body: ChangeRole;
+    path: {
+        userId: string;
+    };
+    query?: never;
+    url: '/api/members/{userId}';
+};
+
+export type ChangeMemberRoleErrors = {
+    /**
+     * Not allowed
+     */
+    403: unknown;
+    /**
+     * Not a member
+     */
+    404: unknown;
+    /**
+     * The workspace would be left without an owner
+     */
+    409: unknown;
+};
+
+export type ChangeMemberRoleResponses = {
+    /**
+     * Changed
+     */
+    204: void;
+};
+
+export type ChangeMemberRoleResponse = ChangeMemberRoleResponses[keyof ChangeMemberRoleResponses];
+
+export type ListMembersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/members';
+};
+
+export type ListMembersErrors = {
+    /**
+     * No active workspace
+     */
+    400: Array<MemberResponse>;
+    /**
+     * Not a member of the active workspace
+     */
+    403: Array<MemberResponse>;
+};
+
+export type ListMembersError = ListMembersErrors[keyof ListMembersErrors];
+
+export type ListMembersResponses = {
+    /**
+     * The members
+     */
+    200: Array<MemberResponse>;
+};
+
+export type ListMembersResponse = ListMembersResponses[keyof ListMembersResponses];
+
 export type GetHealthData = {
     body?: never;
     path?: never;
@@ -296,3 +496,32 @@ export type GetCsrfResponses = {
 };
 
 export type GetCsrfResponse = GetCsrfResponses[keyof GetCsrfResponses];
+
+export type RevokeInvitationData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/invitations/{id}';
+};
+
+export type RevokeInvitationErrors = {
+    /**
+     * Only owners can withdraw an owner invitation
+     */
+    403: unknown;
+    /**
+     * No such pending invitation
+     */
+    404: unknown;
+};
+
+export type RevokeInvitationResponses = {
+    /**
+     * Withdrawn
+     */
+    204: void;
+};
+
+export type RevokeInvitationResponse = RevokeInvitationResponses[keyof RevokeInvitationResponses];

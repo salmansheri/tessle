@@ -39,6 +39,8 @@ tessle:
     secret: ${TESSLE_OTP_SECRET:}
   cookies:
     secure: ${TESSLE_COOKIES_SECURE:true}
+  # Where emailed links point (the Next.js frontend).
+  public-url: ${TESSLE_PUBLIC_URL:http://localhost:3000}
   mail:
     from: ${MAIL_FROM:onboarding@resend.dev}
 

@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 /** Fixed-window counter in Redis. The count and its expiry are set atomically. */
 @Component
-class RateLimiter {
+public class RateLimiter {
 
 	private static final DefaultRedisScript<Long> HIT = new DefaultRedisScript<>("""
 			local n = redis.call('INCR', KEYS[1])
@@ -27,7 +27,7 @@ class RateLimiter {
 	}
 
 	/** Counts one hit and returns whether it is within {@code limit} for the window. */
-	boolean allow(String scope, String subject, int limit, Duration window) {
+	public boolean allow(String scope, String subject, int limit, Duration window) {
 		Long count = redis.execute(HIT, List.of("rl:" + scope + ":" + digest(subject)), String.valueOf(window.toMillis()));
 		return count != null && count <= limit;
 	}

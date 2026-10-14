@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ActivateWorkspaceData, ActivateWorkspaceErrors, ActivateWorkspaceResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, GetCsrfData, GetCsrfResponses, GetHealthData, GetHealthResponses, GetMeData, GetMeErrors, GetMeResponses, ListWorkspacesData, ListWorkspacesResponses, LogoutData, LogoutErrors, LogoutEverywhereData, LogoutEverywhereErrors, LogoutEverywhereResponses, LogoutResponses, RefreshSessionData, RefreshSessionErrors, RefreshSessionResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
+import type { AcceptInvitationData, AcceptInvitationErrors, AcceptInvitationResponses, ActivateWorkspaceData, ActivateWorkspaceErrors, ActivateWorkspaceResponses, ChangeMemberRoleData, ChangeMemberRoleErrors, ChangeMemberRoleResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, GetCsrfData, GetCsrfResponses, GetHealthData, GetHealthResponses, GetMeData, GetMeErrors, GetMeResponses, InviteMemberData, InviteMemberErrors, InviteMemberResponses, ListInvitationsData, ListInvitationsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListWorkspacesData, ListWorkspacesResponses, LogoutData, LogoutErrors, LogoutEverywhereData, LogoutEverywhereErrors, LogoutEverywhereResponses, LogoutResponses, RefreshSessionData, RefreshSessionErrors, RefreshSessionResponses, RemoveMemberData, RemoveMemberErrors, RemoveMemberResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -39,6 +39,35 @@ export const createWorkspace = <ThrowOnError extends boolean = false>(options: O
  * Switch the session's active Workspace
  */
 export const activateWorkspace = <ThrowOnError extends boolean = false>(options: Options<ActivateWorkspaceData, ThrowOnError>): RequestResult<ActivateWorkspaceResponses, ActivateWorkspaceErrors, ThrowOnError> => (options.client ?? client).post<ActivateWorkspaceResponses, ActivateWorkspaceErrors, ThrowOnError>({ url: '/api/workspaces/{id}/activate', ...options });
+
+/**
+ * Pending invitations of the active Workspace
+ */
+export const listInvitations = <ThrowOnError extends boolean = false>(options?: Options<ListInvitationsData, ThrowOnError>): RequestResult<ListInvitationsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListInvitationsResponses, unknown, ThrowOnError>({ url: '/api/invitations', ...options });
+
+/**
+ * Email an invitation to join the active Workspace
+ */
+export const inviteMember = <ThrowOnError extends boolean = false>(options: Options<InviteMemberData, ThrowOnError>): RequestResult<InviteMemberResponses, InviteMemberErrors, ThrowOnError> => (options.client ?? client).post<InviteMemberResponses, InviteMemberErrors, ThrowOnError>({
+    url: '/api/invitations',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Accept an invitation; the signed-in email must match the invited one
+ */
+export const acceptInvitation = <ThrowOnError extends boolean = false>(options: Options<AcceptInvitationData, ThrowOnError>): RequestResult<AcceptInvitationResponses, AcceptInvitationErrors, ThrowOnError> => (options.client ?? client).post<AcceptInvitationResponses, AcceptInvitationErrors, ThrowOnError>({
+    url: '/api/invitations/accept',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * Rotate the refresh token and renew the session cookies
@@ -80,6 +109,28 @@ export const logout = <ThrowOnError extends boolean = false>(options?: Options<L
 export const logoutEverywhere = <ThrowOnError extends boolean = false>(options?: Options<LogoutEverywhereData, ThrowOnError>): RequestResult<LogoutEverywhereResponses, LogoutEverywhereErrors, ThrowOnError> => (options?.client ?? client).post<LogoutEverywhereResponses, LogoutEverywhereErrors, ThrowOnError>({ url: '/api/auth/logout-all', ...options });
 
 /**
+ * Remove a member (owners and admins; only owners remove owners)
+ */
+export const removeMember = <ThrowOnError extends boolean = false>(options: Options<RemoveMemberData, ThrowOnError>): RequestResult<RemoveMemberResponses, RemoveMemberErrors, ThrowOnError> => (options.client ?? client).delete<RemoveMemberResponses, RemoveMemberErrors, ThrowOnError>({ url: '/api/members/{userId}', ...options });
+
+/**
+ * Change a member's role (owners and admins; only owners touch owners)
+ */
+export const changeMemberRole = <ThrowOnError extends boolean = false>(options: Options<ChangeMemberRoleData, ThrowOnError>): RequestResult<ChangeMemberRoleResponses, ChangeMemberRoleErrors, ThrowOnError> => (options.client ?? client).patch<ChangeMemberRoleResponses, ChangeMemberRoleErrors, ThrowOnError>({
+    url: '/api/members/{userId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Members of the active Workspace
+ */
+export const listMembers = <ThrowOnError extends boolean = false>(options?: Options<ListMembersData, ThrowOnError>): RequestResult<ListMembersResponses, ListMembersErrors, ThrowOnError> => (options?.client ?? client).get<ListMembersResponses, ListMembersErrors, ThrowOnError>({ url: '/api/members', ...options });
+
+/**
  * Liveness check
  */
 export const getHealth = <ThrowOnError extends boolean = false>(options?: Options<GetHealthData, ThrowOnError>): RequestResult<GetHealthResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetHealthResponses, unknown, ThrowOnError>({ url: '/api/health', ...options });
@@ -93,3 +144,8 @@ export const getMe = <ThrowOnError extends boolean = false>(options?: Options<Ge
  * Start a CSRF double-submit exchange
  */
 export const getCsrf = <ThrowOnError extends boolean = false>(options?: Options<GetCsrfData, ThrowOnError>): RequestResult<GetCsrfResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetCsrfResponses, unknown, ThrowOnError>({ url: '/api/auth/csrf', ...options });
+
+/**
+ * Withdraw a pending invitation
+ */
+export const revokeInvitation = <ThrowOnError extends boolean = false>(options: Options<RevokeInvitationData, ThrowOnError>): RequestResult<RevokeInvitationResponses, RevokeInvitationErrors, ThrowOnError> => (options.client ?? client).delete<RevokeInvitationResponses, RevokeInvitationErrors, ThrowOnError>({ url: '/api/invitations/{id}', ...options });

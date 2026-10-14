@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { activateWorkspace, createWorkspace, getCsrf, getHealth, getMe, listWorkspaces, logout, logoutEverywhere, type Options, refreshSession, requestOtp, verifyOtp } from '../sdk.gen';
-import type { ActivateWorkspaceData, ActivateWorkspaceResponse, CreateWorkspaceData, CreateWorkspaceError, CreateWorkspaceResponse, GetCsrfData, GetCsrfResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeError, GetMeResponse, ListWorkspacesData, ListWorkspacesResponse, LogoutData, LogoutEverywhereData, LogoutEverywhereResponse, LogoutResponse, RefreshSessionData, RefreshSessionResponse, RequestOtpData, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
+import { acceptInvitation, activateWorkspace, changeMemberRole, createWorkspace, getCsrf, getHealth, getMe, inviteMember, listInvitations, listMembers, listWorkspaces, logout, logoutEverywhere, type Options, refreshSession, removeMember, requestOtp, revokeInvitation, verifyOtp } from '../sdk.gen';
+import type { AcceptInvitationData, AcceptInvitationError, AcceptInvitationResponse, ActivateWorkspaceData, ActivateWorkspaceResponse, ChangeMemberRoleData, ChangeMemberRoleResponse, CreateWorkspaceData, CreateWorkspaceError, CreateWorkspaceResponse, GetCsrfData, GetCsrfResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeError, GetMeResponse, InviteMemberData, InviteMemberError, InviteMemberResponse, ListInvitationsData, ListInvitationsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListWorkspacesData, ListWorkspacesResponse, LogoutData, LogoutEverywhereData, LogoutEverywhereResponse, LogoutResponse, RefreshSessionData, RefreshSessionResponse, RemoveMemberData, RemoveMemberResponse, RequestOtpData, RevokeInvitationData, RevokeInvitationResponse, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -81,6 +81,58 @@ export const activateWorkspaceMutation = (options?: Partial<Options<ActivateWork
     const mutationOptions: UseMutationOptions<ActivateWorkspaceResponse, DefaultError, Options<ActivateWorkspaceData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await activateWorkspace({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listInvitationsQueryKey = (options?: Options<ListInvitationsData>) => createQueryKey('listInvitations', options);
+
+/**
+ * Pending invitations of the active Workspace
+ */
+export const listInvitationsOptions = (options?: Options<ListInvitationsData>) => queryOptions<ListInvitationsResponse, DefaultError, ListInvitationsResponse, ReturnType<typeof listInvitationsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listInvitations({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listInvitationsQueryKey(options)
+});
+
+/**
+ * Email an invitation to join the active Workspace
+ */
+export const inviteMemberMutation = (options?: Partial<Options<InviteMemberData>>): UseMutationOptions<InviteMemberResponse, InviteMemberError, Options<InviteMemberData>> => {
+    const mutationOptions: UseMutationOptions<InviteMemberResponse, InviteMemberError, Options<InviteMemberData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await inviteMember({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Accept an invitation; the signed-in email must match the invited one
+ */
+export const acceptInvitationMutation = (options?: Partial<Options<AcceptInvitationData>>): UseMutationOptions<AcceptInvitationResponse, AcceptInvitationError, Options<AcceptInvitationData>> => {
+    const mutationOptions: UseMutationOptions<AcceptInvitationResponse, AcceptInvitationError, Options<AcceptInvitationData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await acceptInvitation({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -176,6 +228,58 @@ export const logoutEverywhereMutation = (options?: Partial<Options<LogoutEverywh
     return mutationOptions;
 };
 
+/**
+ * Remove a member (owners and admins; only owners remove owners)
+ */
+export const removeMemberMutation = (options?: Partial<Options<RemoveMemberData>>): UseMutationOptions<RemoveMemberResponse, DefaultError, Options<RemoveMemberData>> => {
+    const mutationOptions: UseMutationOptions<RemoveMemberResponse, DefaultError, Options<RemoveMemberData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await removeMember({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Change a member's role (owners and admins; only owners touch owners)
+ */
+export const changeMemberRoleMutation = (options?: Partial<Options<ChangeMemberRoleData>>): UseMutationOptions<ChangeMemberRoleResponse, DefaultError, Options<ChangeMemberRoleData>> => {
+    const mutationOptions: UseMutationOptions<ChangeMemberRoleResponse, DefaultError, Options<ChangeMemberRoleData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await changeMemberRole({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listMembersQueryKey = (options?: Options<ListMembersData>) => createQueryKey('listMembers', options);
+
+/**
+ * Members of the active Workspace
+ */
+export const listMembersOptions = (options?: Options<ListMembersData>) => queryOptions<ListMembersResponse, ListMembersError, ListMembersResponse, ReturnType<typeof listMembersQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listMembers({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listMembersQueryKey(options)
+});
+
 export const getHealthQueryKey = (options?: Options<GetHealthData>) => createQueryKey('getHealth', options);
 
 /**
@@ -229,3 +333,20 @@ export const getCsrfOptions = (options?: Options<GetCsrfData>) => queryOptions<G
     },
     queryKey: getCsrfQueryKey(options)
 });
+
+/**
+ * Withdraw a pending invitation
+ */
+export const revokeInvitationMutation = (options?: Partial<Options<RevokeInvitationData>>): UseMutationOptions<RevokeInvitationResponse, DefaultError, Options<RevokeInvitationData>> => {
+    const mutationOptions: UseMutationOptions<RevokeInvitationResponse, DefaultError, Options<RevokeInvitationData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await revokeInvitation({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};

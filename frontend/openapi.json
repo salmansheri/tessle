@@ -95,6 +95,124 @@
         }
       }
     },
+    "/api/invitations" : {
+      "get" : {
+        "tags" : [ "invitations-controller" ],
+        "summary" : "Pending invitations of the active Workspace",
+        "operationId" : "listInvitations",
+        "responses" : {
+          "200" : {
+            "description" : "Pending invitations",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/InvitationResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "invitations-controller" ],
+        "summary" : "Email an invitation to join the active Workspace",
+        "operationId" : "inviteMember",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/InviteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Invitation sent",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/InvitationResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not allowed",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/InvitationResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Already a member, or a pending owner invitation exists",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/InvitationResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "Too many invitations sent recently",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/InvitationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/invitations/accept" : {
+      "post" : {
+        "tags" : [ "invitations-controller" ],
+        "summary" : "Accept an invitation; the signed-in email must match the invited one",
+        "operationId" : "acceptInvitation",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AcceptRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Joined; the joined Workspace becomes active",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AcceptedResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Unknown, used, expired, or meant for someone else",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AcceptedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/refresh" : {
       "post" : {
         "tags" : [ "auth-controller" ],
@@ -227,6 +345,122 @@
         }
       }
     },
+    "/api/members/{userId}" : {
+      "delete" : {
+        "tags" : [ "members-controller" ],
+        "summary" : "Remove a member (owners and admins; only owners remove owners)",
+        "operationId" : "removeMember",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Removed"
+          },
+          "403" : {
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "description" : "Not a member"
+          },
+          "409" : {
+            "description" : "The workspace would be left without an owner"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "members-controller" ],
+        "summary" : "Change a member's role (owners and admins; only owners touch owners)",
+        "operationId" : "changeMemberRole",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeRole"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Changed"
+          },
+          "403" : {
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "description" : "Not a member"
+          },
+          "409" : {
+            "description" : "The workspace would be left without an owner"
+          }
+        }
+      }
+    },
+    "/api/members" : {
+      "get" : {
+        "tags" : [ "members-controller" ],
+        "summary" : "Members of the active Workspace",
+        "operationId" : "listMembers",
+        "responses" : {
+          "200" : {
+            "description" : "The members",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MemberResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "No active workspace",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MemberResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not a member of the active workspace",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MemberResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health" : {
       "get" : {
         "tags" : [ "health-controller" ],
@@ -293,6 +527,33 @@
           }
         }
       }
+    },
+    "/api/invitations/{id}" : {
+      "delete" : {
+        "tags" : [ "invitations-controller" ],
+        "summary" : "Withdraw a pending invitation",
+        "operationId" : "revokeInvitation",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Withdrawn"
+          },
+          "403" : {
+            "description" : "Only owners can withdraw an owner invitation"
+          },
+          "404" : {
+            "description" : "No such pending invitation"
+          }
+        }
+      }
     }
   },
   "components" : {
@@ -303,7 +564,8 @@
           "name" : {
             "type" : "string",
             "maxLength" : 80,
-            "minLength" : 0
+            "minLength" : 0,
+            "pattern" : "^[^\\p{Cntrl}]*$"
           }
         },
         "required" : [ "name" ]
@@ -324,6 +586,66 @@
           }
         },
         "required" : [ "id", "name", "role" ]
+      },
+      "InviteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "format" : "email",
+            "minLength" : 1
+          },
+          "role" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "owner|admin|builder|editor|viewer"
+          }
+        },
+        "required" : [ "email", "role" ]
+      },
+      "InvitationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "email", "expiresAt", "id", "role" ]
+      },
+      "AcceptRequest" : {
+        "type" : "object",
+        "properties" : {
+          "token" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "token" ]
+      },
+      "AcceptedResponse" : {
+        "type" : "object",
+        "properties" : {
+          "workspaceId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "role" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "role", "workspaceId" ]
       },
       "OtpVerification" : {
         "type" : "object",
@@ -369,6 +691,34 @@
           }
         },
         "required" : [ "email" ]
+      },
+      "ChangeRole" : {
+        "type" : "object",
+        "properties" : {
+          "role" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "owner|admin|builder|editor|viewer"
+          }
+        },
+        "required" : [ "role" ]
+      },
+      "MemberResponse" : {
+        "type" : "object",
+        "properties" : {
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string",
+            "enum" : [ "owner", "admin", "builder", "editor", "viewer" ]
+          }
+        },
+        "required" : [ "email", "role", "userId" ]
       },
       "HealthResponse" : {
         "type" : "object",

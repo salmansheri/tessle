@@ -15,11 +15,10 @@ import javax.crypto.spec.SecretKeySpec;
 
 import dev.salman.Lowcodebackend.mail.MailMessage;
 import dev.salman.Lowcodebackend.mail.MailQueue;
+import dev.salman.Lowcodebackend.system.AfterCommit;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 class OtpService {
@@ -51,27 +50,13 @@ class OtpService {
 		MailMessage mail = MailMessage.of(email, "Your Tessle sign-in code",
 				"Your Tessle sign-in code is " + code + ". It expires in 10 minutes. "
 						+ "If you did not ask for it, you can ignore this email.");
-		afterCommit(() -> mailQueue.enqueue(mail));
+		AfterCommit.run(() -> mailQueue.enqueue(mail));
 	}
 
 	@Scheduled(fixedDelayString = "PT1H", initialDelayString = "PT5M")
 	@Transactional
 	void deleteStaleCodes() {
 		codes.deleteExpiredBefore(clock.instant().minus(Duration.ofDays(1)));
-	}
-
-	/** Never mail a code the database did not keep: a rolled-back request must not send one. */
-	private static void afterCommit(Runnable action) {
-		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-			action.run();
-			return;
-		}
-		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-			@Override
-			public void afterCommit() {
-				action.run();
-			}
-		});
 	}
 
 	/** Returns the signed-in User, or empty for any kind of failure (wrong, expired, locked, unknown). */

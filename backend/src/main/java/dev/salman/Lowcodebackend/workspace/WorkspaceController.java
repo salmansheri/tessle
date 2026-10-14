@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = "/api/workspaces", produces = "application/json")
 class WorkspaceController {
 
-	record CreateWorkspace(@NotBlank @Size(max = 80) String name) {
+	record CreateWorkspace(@NotBlank @Size(max = 80) @Pattern(regexp = "^[^\\p{Cntrl}]*$", message = "must not contain control characters") String name) {
 	}
 
 	record WorkspaceResponse(@Schema(requiredMode = Schema.RequiredMode.REQUIRED) UUID id,

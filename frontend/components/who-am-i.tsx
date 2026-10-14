@@ -82,6 +82,11 @@ export function WhoAmI() {
         </button>
       </div>
       <WorkspaceSwitcher activeId={data.activeWorkspaceId} />
+      {data.activeWorkspaceId && (
+        <Link href="/members" className="text-sm underline">
+          Members
+        </Link>
+      )}
       {signOut.isError && (
         <p role="alert" className="text-sm">
           Could not sign out. Please try again.

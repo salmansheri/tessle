@@ -1,10 +1,11 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ensureCsrf } from "@/lib/api/csrf";
 import { ApiStatusError, unwrap } from "@/lib/api/errors";
+import { safeNext } from "@/lib/safe-next";
 import { requestOtp, verifyOtp } from "@/lib/api/generated/sdk.gen";
 
 function isRateLimited(error: unknown): boolean {
@@ -13,6 +14,7 @@ function isRateLimited(error: unknown): boolean {
 
 export function SignInForm() {
   const router = useRouter();
+  const next = safeNext(useSearchParams().get("next"));
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -50,7 +52,7 @@ export function SignInForm() {
       await ensureCsrf();
       await verifyCode.mutateAsync({ email, code });
       await queryClient.invalidateQueries();
-      router.push("/");
+      router.push(next);
     } catch (error) {
       setMessage(
         isRateLimited(error)
