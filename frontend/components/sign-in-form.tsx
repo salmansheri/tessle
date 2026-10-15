@@ -62,27 +62,36 @@ export function SignInForm() {
     }
   }
 
+  const busy = requestCode.isPending || verifyCode.isPending;
+
   return (
-    <form
-      onSubmit={codeSent ? signIn : sendCode}
-      className="flex w-full max-w-sm flex-col gap-4"
-    >
-      <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-      <label className="flex flex-col gap-1 text-sm">
-        Email
+    <form onSubmit={codeSent ? signIn : sendCode} className="grid gap-5">
+      <div className="grid gap-1.5">
+        <h1 className="page-title">Sign in</h1>
+        <p className="text-ink-2">
+          {codeSent
+            ? `We sent a 6-digit code to ${email}. It expires in 10 minutes.`
+            : "Enter your email and we will send you a one-time code. No password needed."}
+        </p>
+      </div>
+
+      <label className="field">
+        Email address
         <input
           type="email"
           required
           autoComplete="email"
+          autoFocus={!codeSent}
+          className="input"
           value={email}
           disabled={codeSent}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 disabled:opacity-60 dark:border-zinc-700"
         />
       </label>
+
       {codeSent && (
-        <label className="flex flex-col gap-1 text-sm">
-          6-digit code from your email
+        <label className="field">
+          6-digit code
           <input
             inputMode="numeric"
             autoComplete="one-time-code"
@@ -90,35 +99,34 @@ export function SignInForm() {
             maxLength={6}
             required
             autoFocus
+            className="input text-center font-mono text-xl tracking-[0.5em]"
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            className="rounded-md border border-zinc-300 bg-transparent px-3 py-2 tracking-widest dark:border-zinc-700"
           />
         </label>
       )}
-      <button
-        type="submit"
-        disabled={requestCode.isPending || verifyCode.isPending}
-        className="rounded-md bg-foreground px-4 py-2 font-medium text-background disabled:opacity-60"
-      >
+
+      <button type="submit" disabled={busy} className="btn btn-primary">
         {codeSent ? "Sign in" : "Email me a code"}
       </button>
+
       {codeSent && (
         <button
           type="button"
+          className="btn btn-quiet"
           onClick={() => {
             setCodeSent(false);
             setCode("");
             setMessage(null);
           }}
-          className="text-left text-sm underline"
         >
           Use a different email
         </button>
       )}
-      <p role="status" aria-live="polite" className="min-h-5 text-sm">
-        {message}
-      </p>
+
+      <div role="status" aria-live="polite">
+        {message && <p className="text-[0.875rem] text-[var(--bad-fg)]">{message}</p>}
+      </div>
     </form>
   );
 }

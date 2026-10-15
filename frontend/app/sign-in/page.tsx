@@ -1,12 +1,16 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
+import { AuthFrame } from "@/components/auth-frame";
 import { SignInForm } from "@/components/sign-in-form";
+
+export const metadata: Metadata = { title: "Sign in" };
 
 export default function SignInPage() {
   return (
-    <main className="flex flex-1 items-center justify-center px-6">
+    <AuthFrame>
       <Suspense>
         <SignInForm />
       </Suspense>
-    </main>
+    </AuthFrame>
   );
 }

@@ -31,6 +31,8 @@ Tenancy (ADR 0001): every platform transaction runs as the RLS-subject role `tes
 - After changing any backend endpoint: `cd backend && ./mvnw test -Dtest=OpenApiContractTests -Dopenapi.update=true`, (needs Docker, like all backend tests), then `bun run generate:api`, and commit both. CI fails on a stale spec or stale generated code.
 - No test runner yet. `@hey-api/openapi-ts` is pinned exactly (pre-1.0).
 
+**Design:** read `PRODUCT.md` (users, purpose, principles) and `DESIGN.md` (tokens, glass system, components, named rules) before touching UI. The look is Monochrome Proof with frosted glass in two real themes (light/dark, both mandatory, WCAG 2.2 AA). Write only the unprefixed `backdrop-filter` in CSS: Next's optimizer drops it when a hand-written `-webkit-` twin is present, and Chromium ignores the prefixed form. Use the semantic classes in `app/globals.css` (`.glass`, `.btn`, `.pill`, `.data-table`, ...) and the token colors, never hard-coded hex. The signed-in frame is `components/app-shell.tsx`; it must keep rendering while the session loads. Direction contract: `.impeccable/surfaces/`.
+
 **Important:** `frontend/AGENTS.md` warns this Next.js version has breaking changes from training data. Read the relevant guide in `frontend/node_modules/next/dist/docs/` before writing Next.js code.
 
 CI (`.github/workflows/ci.yml`) runs backend `verify` and frontend generate-drift check, typecheck, lint and build.

@@ -10,3 +10,8 @@
 
 # claude local settings
 .claude/settings.local.json
+
+# Impeccable working files: screenshots, decision-page sketches and question state stay local.
+.impeccable/review/
+.impeccable/mocks/
+.impeccable/questions/

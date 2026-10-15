@@ -1,12 +1,16 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AcceptInvitation } from "@/components/accept-invitation";
+import { AuthFrame } from "@/components/auth-frame";
+
+export const metadata: Metadata = { title: "Accept invitation" };
 
 export default function AcceptInvitationPage() {
   return (
-    <main className="flex flex-1 items-center justify-center px-6">
+    <AuthFrame>
       <Suspense>
         <AcceptInvitation />
       </Suspense>
-    </main>
+    </AuthFrame>
   );
 }

@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-15T16:41:52.413702Z",
+  "title": "Design System: Tessle",
+  "extensions": {
+    "colorMeta": {
+      "accent-light": {
+        "role": "primary",
+        "displayName": "Vermilion (light)",
+        "canonical": "#d63a14",
+        "tonalRamp": [
+          "oklch(15% 0.2 35)",
+          "oklch(25% 0.2 35)",
+          "oklch(35% 0.2 35)",
+          "oklch(45% 0.2 35)",
+          "oklch(60% 0.2 35)",
+          "oklch(75% 0.2 35)",
+          "oklch(85% 0.2 35)",
+          "oklch(95% 0.2 35)"
+        ]
+      },
+      "accent-dark": {
+        "role": "primary",
+        "displayName": "Vermilion (dark)",
+        "canonical": "#ff6b45",
+        "tonalRamp": [
+          "oklch(15% 0.2 35)",
+          "oklch(25% 0.2 35)",
+          "oklch(35% 0.2 35)",
+          "oklch(45% 0.2 35)",
+          "oklch(60% 0.2 35)",
+          "oklch(75% 0.2 35)",
+          "oklch(85% 0.2 35)",
+          "oklch(95% 0.2 35)"
+        ]
+      },
+      "ground-light": {
+        "role": "neutral",
+        "displayName": "Ground (light)",
+        "canonical": "oklch(0.975 0.002 260)",
+        "tonalRamp": [
+          "oklch(15% 0.01 260)",
+          "oklch(25% 0.01 260)",
+          "oklch(35% 0.01 260)",
+          "oklch(45% 0.01 260)",
+          "oklch(60% 0.01 260)",
+          "oklch(75% 0.01 260)",
+          "oklch(85% 0.01 260)",
+          "oklch(95% 0.01 260)"
+        ]
+      },
+      "ground-dark": {
+        "role": "neutral",
+        "displayName": "Ground (dark)",
+        "canonical": "oklch(0.155 0.006 260)",
+        "tonalRamp": [
+          "oklch(15% 0.01 260)",
+          "oklch(25% 0.01 260)",
+          "oklch(35% 0.01 260)",
+          "oklch(45% 0.01 260)",
+          "oklch(60% 0.01 260)",
+          "oklch(75% 0.01 260)",
+          "oklch(85% 0.01 260)",
+          "oklch(95% 0.01 260)"
+        ]
+      },
+      "ink-light": {
+        "role": "neutral",
+        "displayName": "Ink (light)",
+        "canonical": "oklch(0.2 0.012 260)",
+        "tonalRamp": [
+          "oklch(15% 0.012 260)",
+          "oklch(25% 0.012 260)",
+          "oklch(35% 0.012 260)",
+          "oklch(45% 0.012 260)",
+          "oklch(60% 0.012 260)",
+          "oklch(75% 0.012 260)",
+          "oklch(85% 0.012 260)",
+          "oklch(95% 0.012 260)"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Ink (dark)",
+        "canonical": "oklch(0.96 0.003 260)",
+        "tonalRamp": [
+          "oklch(15% 0.012 260)",
+          "oklch(25% 0.012 260)",
+          "oklch(35% 0.012 260)",
+          "oklch(45% 0.012 260)",
+          "oklch(60% 0.012 260)",
+          "oklch(75% 0.012 260)",
+          "oklch(85% 0.012 260)",
+          "oklch(95% 0.012 260)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Title",
+        "purpose": "Page title, largest step."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "All running text and cells."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Pills, field labels, small buttons."
+      },
+      "column-head": {
+        "displayName": "Column head",
+        "purpose": "Table column headers only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "glass-shadow-light",
+        "value": "0 0 0 1px color-mix(in oklab, var(--ink) 6%, transparent), 0 1px 0 0 color-mix(in oklab, #fff 80%, transparent) inset, 0 10px 30px -12px rgb(20 24 40 / 0.2)",
+        "purpose": "Glass surfaces, light theme."
+      },
+      {
+        "name": "glass-shadow-dark",
+        "value": "0 1px 0 0 color-mix(in oklab, #fff 8%, transparent) inset, 0 14px 36px -14px rgb(0 0 0 / 0.7)",
+        "purpose": "Glass surfaces, dark theme."
+      },
+      {
+        "name": "blur",
+        "value": "blur(24px) saturate(1.8)",
+        "purpose": "backdrop-filter for glass; none under reduced transparency."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "All transitions and the rise."
+      },
+      {
+        "name": "rise",
+        "value": "0.5s, 8px translateY, 0.04s stagger",
+        "purpose": "Content entry."
+      },
+      {
+        "name": "control",
+        "value": "0.18s",
+        "purpose": "Hover/state transitions."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "table-narrow",
+        "value": "40rem"
+      },
+      {
+        "name": "lg (rail appears)",
+        "value": "64rem"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Ghost button with hairline.",
+      "html": "<button class=\"ds-btn\">Cancel</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;min-height:2.5rem;padding:0 1rem;border-radius:8px;border:1px solid var(--line-strong);background:transparent;color:var(--ink);font:inherit;font-weight:600;cursor:pointer;transition:background-color .18s}.ds-btn:hover{background:var(--surface-2)}.ds-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.ds-btn:active{transform:translateY(1px)}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Solid vermilion; one per view.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">New app</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;min-height:2.5rem;padding:0 1rem;border-radius:8px;border:1px solid var(--line-strong);background:transparent;color:var(--ink);font:inherit;font-weight:600;cursor:pointer;transition:background-color .18s}.ds-btn:hover{background:var(--surface-2)}.ds-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.ds-btn:active{transform:translateY(1px)}.ds-btn-primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}.ds-btn-primary:hover{background:color-mix(in oklab,var(--accent) 88%,var(--ink))}"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Translucent field with strong hairline.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search apps\">",
+      "css": ".ds-input{min-height:2.5rem;width:100%;padding:0 .75rem;border-radius:8px;border:1px solid var(--line-strong);background:color-mix(in oklab,var(--surface) 80%,transparent);color:var(--ink);font:inherit;caret-color:var(--accent)}.ds-input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Nav Link",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Rail link; current page gets surface and hairline ring.",
+      "html": "<a class=\"ds-nav\" aria-current=\"page\" href=\"#\">Apps</a>",
+      "css": ".ds-nav{display:flex;align-items:center;min-height:2.5rem;padding:0 .75rem;border-radius:8px;color:var(--ink-2);font-weight:500;text-decoration:none}.ds-nav:hover{background:var(--surface-2);color:var(--ink)}.ds-nav[aria-current=page]{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line)}.ds-nav:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Pill",
+      "kind": "chip",
+      "refersTo": "pill",
+      "description": "State word in a round hairline pill.",
+      "html": "<span class=\"ds-pill\">viewer</span>",
+      "css": ".ds-pill{display:inline-flex;padding:.125rem .625rem;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-2);font-size:.8125rem;font-weight:600}"
+    },
+    {
+      "name": "Proof Line",
+      "kind": "custom",
+      "refersTo": "pill",
+      "description": "Signature: a claim next to the fact that proves it.",
+      "html": "<p class=\"ds-proof\"><span class=\"ds-pill\">admin</span><span>You can build and manage members, but not owners.</span></p>",
+      "css": ".ds-proof{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;color:var(--ink-2);max-width:68ch}.ds-pill{display:inline-flex;padding:.125rem .625rem;border-radius:999px;border:1px solid color-mix(in oklab,var(--accent) 40%,transparent);background:color-mix(in oklab,var(--accent) 10%,transparent);color:var(--ink);font-size:.8125rem;font-weight:600}"
+    },
+    {
+      "name": "Glass Panel",
+      "kind": "card",
+      "refersTo": "menu",
+      "description": "Frosted surface for chrome and overlays.",
+      "html": "<div class=\"ds-glass\">Workspace</div>",
+      "css": ".ds-glass{padding:.5rem;border-radius:12px;background:var(--glass);backdrop-filter:var(--blur);border:1px solid var(--glass-edge);box-shadow:var(--glass-shadow);color:var(--ink)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Monochrome Proof",
+    "overview": "A neutral scale carries the whole interface and one vermilion accent is spent rarely. Frosted glass gives the shell its depth over a near-neutral, cool-tinted ambient mesh. Both themes are first-class. The signature is the proof line: a claim paired with the fact that proves it.",
+    "keyCharacteristics": [
+      "Two real themes, set before first paint.",
+      "Glass for shell and overlays; near-opaque glass for data tables.",
+      "One accent for primary action, focus and current location.",
+      "Geist at tight tracking with tabular figures.",
+      "One soft rise on entry; reduced motion and transparency honoured."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "The accent is the only chromatic colour in the chrome. If a second hue is needed for meaning, it is a status pair with text, not decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Cool Mesh Rule",
+        "body": "The ambient mesh stays near-neutral and cool (three radial lobes, hue 250-262). No warm or teal washes.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Weights Rule",
+        "body": "400 for reading, 600 for naming. No other weights.",
+        "section": "typography"
+      },
+      {
+        "name": "The Opaque Data Rule",
+        "body": "Tables and popover menus use the strong glass fill. Figures must keep contrast; frost is for chrome.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Fallback Rule",
+        "body": "Under prefers-reduced-transparency: reduce, or where backdrop-filter is unsupported, glass and strong glass collapse to solid surface and blur to none.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Unprefixed Blur Rule",
+        "body": "Write only the unprefixed backdrop-filter in CSS. Next's CSS optimizer drops the property when a -webkit- form is authored, and Chromium ignores the prefixed form, so the glass silently vanishes.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do define every colour for both themes and check AA in each.",
+      "Do pair every status or role colour with a word.",
+      "Do use the strong glass fill for anything that carries data.",
+      "Do keep new screens behind the proof-line pattern: title, proof line, actions, content.",
+      "Do author backdrop-filter unprefixed only.",
+      "Do honour reduced motion and reduced transparency in anything new."
+    ],
+    "donts": [
+      "Don't add a second accent hue or gradient fills on buttons.",
+      "Don't build card-grid dashboards; use tables and proof lines.",
+      "Don't put warm or teal washes into the ambient mesh.",
+      "Don't put body text on thin glass.",
+      "Don't introduce weights other than 400 and 600."
+    ]
+  }
+}
