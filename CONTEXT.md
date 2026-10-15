@@ -26,6 +26,10 @@ _Avoid_: Current workspace, selected tenant
 A connection to an external database, owned by exactly one Workspace and never shared.
 _Avoid_: Connection, database, tenant database
 
+**Exposed table**:
+A table of a Data source that an admin has chosen to make visible to builders, either read-only or read-write. Tables that are not exposed do not exist as far as builders are concerned.
+_Avoid_: Allowed table, mapped table
+
 **Access rule**:
 A row or column restriction attached to a Data source or table, applying to every Form, Report and export that touches it. Distinct from a Membership role.
 _Avoid_: Permission, row policy
