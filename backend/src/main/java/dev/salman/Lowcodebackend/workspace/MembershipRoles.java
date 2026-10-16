@@ -21,7 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
  * invalidation is ever lost (Redis down). Row-level security remains the backstop for writes.
  */
 @Component
-class MembershipRoles {
+public class MembershipRoles {
 
 	private static final Logger log = LoggerFactory.getLogger(MembershipRoles.class);
 	private static final Duration TTL = Duration.ofSeconds(30);
@@ -56,7 +56,7 @@ class MembershipRoles {
 	}
 
 	/** 403 unless the caller belongs to the Workspace with at least {@code minimum}. */
-	Role require(UUID user, UUID workspace, Role minimum) {
+	public Role require(UUID user, UUID workspace, Role minimum) {
 		Role role = roleOf(user, workspace).orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN));
 		if (!role.atLeast(minimum)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);

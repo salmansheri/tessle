@@ -68,4 +68,49 @@ class RlsProbe {
 		return jdbc.sql("delete from apps").update();
 	}
 
+	@Transactional(readOnly = true)
+	List<String> allDataSourceNames() {
+		return jdbc.sql("select logical_name from data_sources order by logical_name").query(String.class).list();
+	}
+
+	@Transactional
+	void insertDataSource(UUID workspace, String logicalName, UUID createdBy) {
+		jdbc.sql("""
+				insert into data_sources (id, workspace_id, logical_name, label, type, host, port, database_name, username,
+				                          password_ciphertext, secret_key_id, created_by)
+				values (?, ?, ?, 'Label', 'postgresql', 'db.example.com', 5432, 'd', 'u', ?, 'k1', ?)
+				""").params(UUID.randomUUID(), workspace, logicalName, new byte[] { 1 }, createdBy).update();
+	}
+
+	@Transactional
+	int renameDataSources(String label) {
+		return jdbc.sql("update data_sources set label = ?").params(label).update();
+	}
+
+	@Transactional
+	int deleteAllDataSources() {
+		return jdbc.sql("delete from data_sources").update();
+	}
+
+	@Transactional
+	void recordAudit(UUID workspace, UUID actor) {
+		jdbc.sql("insert into audit_events (id, workspace_id, actor_id, action, target_type) values (?, ?, ?, 'x', 'y')")
+				.params(UUID.randomUUID(), workspace, actor).update();
+	}
+
+	@Transactional(readOnly = true)
+	int auditEventCount() {
+		return jdbc.sql("select count(*) from audit_events").query(Integer.class).single();
+	}
+
+	@Transactional
+	int rewriteAuditEvents() {
+		return jdbc.sql("update audit_events set action = 'rewritten'").update();
+	}
+
+	@Transactional
+	int deleteAuditEvents() {
+		return jdbc.sql("delete from audit_events").update();
+	}
+
 }

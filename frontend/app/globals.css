@@ -308,6 +308,22 @@ a {
     color: var(--ink);
   }
 
+  .pill-ok {
+    background: var(--ok-bg);
+    border-color: transparent;
+    color: var(--ok-fg);
+  }
+  .pill-warn {
+    background: var(--warn-bg);
+    border-color: transparent;
+    color: var(--warn-fg);
+  }
+  .pill-bad {
+    background: var(--bad-bg);
+    border-color: transparent;
+    color: var(--bad-fg);
+  }
+
   /* ---- Data ----------------------------------------------------------------------------------- */
   .table-wrap {
     border-radius: var(--radius);

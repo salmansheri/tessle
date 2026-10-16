@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { acceptInvitation, activateWorkspace, changeMemberRole, createApp, createWorkspace, getCsrf, getHealth, getMe, inviteMember, listApps, listInvitations, listMembers, listWorkspaces, logout, logoutEverywhere, type Options, refreshSession, removeMember, requestOtp, revokeInvitation, verifyOtp } from '../sdk.gen';
-import type { AcceptInvitationData, AcceptInvitationError, AcceptInvitationResponse, ActivateWorkspaceData, ActivateWorkspaceResponse, ChangeMemberRoleData, ChangeMemberRoleResponse, CreateAppData, CreateAppError, CreateAppResponse, CreateWorkspaceData, CreateWorkspaceError, CreateWorkspaceResponse, GetCsrfData, GetCsrfResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeError, GetMeResponse, InviteMemberData, InviteMemberError, InviteMemberResponse, ListAppsData, ListAppsError, ListAppsResponse, ListInvitationsData, ListInvitationsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListWorkspacesData, ListWorkspacesResponse, LogoutData, LogoutEverywhereData, LogoutEverywhereResponse, LogoutResponse, RefreshSessionData, RefreshSessionResponse, RemoveMemberData, RemoveMemberResponse, RequestOtpData, RevokeInvitationData, RevokeInvitationResponse, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
+import { acceptInvitation, activateWorkspace, changeMemberRole, createApp, createDataSource, createWorkspace, enableDataSource, getCsrf, getHealth, getMe, inviteMember, listApps, listDataSources, listInvitations, listMembers, listWorkspaces, logout, logoutEverywhere, type Options, refreshSession, removeMember, requestOtp, revokeInvitation, testDataSource, updateDataSource, verifyOtp } from '../sdk.gen';
+import type { AcceptInvitationData, AcceptInvitationError, AcceptInvitationResponse, ActivateWorkspaceData, ActivateWorkspaceResponse, ChangeMemberRoleData, ChangeMemberRoleResponse, CreateAppData, CreateAppError, CreateAppResponse, CreateDataSourceData, CreateDataSourceError, CreateDataSourceResponse, CreateWorkspaceData, CreateWorkspaceError, CreateWorkspaceResponse, EnableDataSourceData, EnableDataSourceError, EnableDataSourceResponse, GetCsrfData, GetCsrfResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeError, GetMeResponse, InviteMemberData, InviteMemberError, InviteMemberResponse, ListAppsData, ListAppsError, ListAppsResponse, ListDataSourcesData, ListDataSourcesError, ListDataSourcesResponse, ListInvitationsData, ListInvitationsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListWorkspacesData, ListWorkspacesResponse, LogoutData, LogoutEverywhereData, LogoutEverywhereResponse, LogoutResponse, RefreshSessionData, RefreshSessionResponse, RemoveMemberData, RemoveMemberResponse, RequestOtpData, RevokeInvitationData, RevokeInvitationResponse, TestDataSourceData, TestDataSourceError, TestDataSourceResponse, UpdateDataSourceData, UpdateDataSourceError, UpdateDataSourceResponse, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -133,6 +133,75 @@ export const acceptInvitationMutation = (options?: Partial<Options<AcceptInvitat
     const mutationOptions: UseMutationOptions<AcceptInvitationResponse, AcceptInvitationError, Options<AcceptInvitationData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await acceptInvitation({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listDataSourcesQueryKey = (options?: Options<ListDataSourcesData>) => createQueryKey('listDataSources', options);
+
+/**
+ * Data sources in the active Workspace (builders and above)
+ */
+export const listDataSourcesOptions = (options?: Options<ListDataSourcesData>) => queryOptions<ListDataSourcesResponse, ListDataSourcesError, ListDataSourcesResponse, ReturnType<typeof listDataSourcesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listDataSources({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listDataSourcesQueryKey(options)
+});
+
+/**
+ * Add a Data source, disabled until a connection test passes (admins and owners)
+ */
+export const createDataSourceMutation = (options?: Partial<Options<CreateDataSourceData>>): UseMutationOptions<CreateDataSourceResponse, CreateDataSourceError, Options<CreateDataSourceData>> => {
+    const mutationOptions: UseMutationOptions<CreateDataSourceResponse, CreateDataSourceError, Options<CreateDataSourceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await createDataSource({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Try the connection and record the result (admins and owners)
+ */
+export const testDataSourceMutation = (options?: Partial<Options<TestDataSourceData>>): UseMutationOptions<TestDataSourceResponse, TestDataSourceError, Options<TestDataSourceData>> => {
+    const mutationOptions: UseMutationOptions<TestDataSourceResponse, TestDataSourceError, Options<TestDataSourceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await testDataSource({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Enable a Data source whose latest connection test passed (admins and owners)
+ */
+export const enableDataSourceMutation = (options?: Partial<Options<EnableDataSourceData>>): UseMutationOptions<EnableDataSourceResponse, EnableDataSourceError, Options<EnableDataSourceData>> => {
+    const mutationOptions: UseMutationOptions<EnableDataSourceResponse, EnableDataSourceError, Options<EnableDataSourceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await enableDataSource({
                 ...options,
                 ...fnOptions,
                 throwOnError: true
@@ -287,6 +356,23 @@ export const changeMemberRoleMutation = (options?: Partial<Options<ChangeMemberR
     const mutationOptions: UseMutationOptions<ChangeMemberRoleResponse, DefaultError, Options<ChangeMemberRoleData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await changeMemberRole({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Edit a Data source; omitted fields stay as they are (admins and owners)
+ */
+export const updateDataSourceMutation = (options?: Partial<Options<UpdateDataSourceData>>): UseMutationOptions<UpdateDataSourceResponse, UpdateDataSourceError, Options<UpdateDataSourceData>> => {
+    const mutationOptions: UseMutationOptions<UpdateDataSourceResponse, UpdateDataSourceError, Options<UpdateDataSourceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateDataSource({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

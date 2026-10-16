@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptInvitationData, AcceptInvitationErrors, AcceptInvitationResponses, ActivateWorkspaceData, ActivateWorkspaceErrors, ActivateWorkspaceResponses, ChangeMemberRoleData, ChangeMemberRoleErrors, ChangeMemberRoleResponses, CreateAppData, CreateAppErrors, CreateAppResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, GetCsrfData, GetCsrfResponses, GetHealthData, GetHealthResponses, GetMeData, GetMeErrors, GetMeResponses, InviteMemberData, InviteMemberErrors, InviteMemberResponses, ListAppsData, ListAppsErrors, ListAppsResponses, ListInvitationsData, ListInvitationsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListWorkspacesData, ListWorkspacesResponses, LogoutData, LogoutErrors, LogoutEverywhereData, LogoutEverywhereErrors, LogoutEverywhereResponses, LogoutResponses, RefreshSessionData, RefreshSessionErrors, RefreshSessionResponses, RemoveMemberData, RemoveMemberErrors, RemoveMemberResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
+import type { AcceptInvitationData, AcceptInvitationErrors, AcceptInvitationResponses, ActivateWorkspaceData, ActivateWorkspaceErrors, ActivateWorkspaceResponses, ChangeMemberRoleData, ChangeMemberRoleErrors, ChangeMemberRoleResponses, CreateAppData, CreateAppErrors, CreateAppResponses, CreateDataSourceData, CreateDataSourceErrors, CreateDataSourceResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, EnableDataSourceData, EnableDataSourceErrors, EnableDataSourceResponses, GetCsrfData, GetCsrfResponses, GetHealthData, GetHealthResponses, GetMeData, GetMeErrors, GetMeResponses, InviteMemberData, InviteMemberErrors, InviteMemberResponses, ListAppsData, ListAppsErrors, ListAppsResponses, ListDataSourcesData, ListDataSourcesErrors, ListDataSourcesResponses, ListInvitationsData, ListInvitationsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListWorkspacesData, ListWorkspacesResponses, LogoutData, LogoutErrors, LogoutEverywhereData, LogoutEverywhereErrors, LogoutEverywhereResponses, LogoutResponses, RefreshSessionData, RefreshSessionErrors, RefreshSessionResponses, RemoveMemberData, RemoveMemberErrors, RemoveMemberResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, TestDataSourceData, TestDataSourceErrors, TestDataSourceResponses, UpdateDataSourceData, UpdateDataSourceErrors, UpdateDataSourceResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -70,6 +70,33 @@ export const acceptInvitation = <ThrowOnError extends boolean = false>(options: 
 });
 
 /**
+ * Data sources in the active Workspace (builders and above)
+ */
+export const listDataSources = <ThrowOnError extends boolean = false>(options?: Options<ListDataSourcesData, ThrowOnError>): RequestResult<ListDataSourcesResponses, ListDataSourcesErrors, ThrowOnError> => (options?.client ?? client).get<ListDataSourcesResponses, ListDataSourcesErrors, ThrowOnError>({ url: '/api/data-sources', ...options });
+
+/**
+ * Add a Data source, disabled until a connection test passes (admins and owners)
+ */
+export const createDataSource = <ThrowOnError extends boolean = false>(options: Options<CreateDataSourceData, ThrowOnError>): RequestResult<CreateDataSourceResponses, CreateDataSourceErrors, ThrowOnError> => (options.client ?? client).post<CreateDataSourceResponses, CreateDataSourceErrors, ThrowOnError>({
+    url: '/api/data-sources',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Try the connection and record the result (admins and owners)
+ */
+export const testDataSource = <ThrowOnError extends boolean = false>(options: Options<TestDataSourceData, ThrowOnError>): RequestResult<TestDataSourceResponses, TestDataSourceErrors, ThrowOnError> => (options.client ?? client).post<TestDataSourceResponses, TestDataSourceErrors, ThrowOnError>({ url: '/api/data-sources/{id}/test', ...options });
+
+/**
+ * Enable a Data source whose latest connection test passed (admins and owners)
+ */
+export const enableDataSource = <ThrowOnError extends boolean = false>(options: Options<EnableDataSourceData, ThrowOnError>): RequestResult<EnableDataSourceResponses, EnableDataSourceErrors, ThrowOnError> => (options.client ?? client).post<EnableDataSourceResponses, EnableDataSourceErrors, ThrowOnError>({ url: '/api/data-sources/{id}/enable', ...options });
+
+/**
  * Rotate the refresh token and renew the session cookies
  */
 export const refreshSession = <ThrowOnError extends boolean = false>(options?: Options<RefreshSessionData, ThrowOnError>): RequestResult<RefreshSessionResponses, RefreshSessionErrors, ThrowOnError> => (options?.client ?? client).post<RefreshSessionResponses, RefreshSessionErrors, ThrowOnError>({ url: '/api/auth/refresh', ...options });
@@ -135,6 +162,18 @@ export const removeMember = <ThrowOnError extends boolean = false>(options: Opti
  */
 export const changeMemberRole = <ThrowOnError extends boolean = false>(options: Options<ChangeMemberRoleData, ThrowOnError>): RequestResult<ChangeMemberRoleResponses, ChangeMemberRoleErrors, ThrowOnError> => (options.client ?? client).patch<ChangeMemberRoleResponses, ChangeMemberRoleErrors, ThrowOnError>({
     url: '/api/members/{userId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Edit a Data source; omitted fields stay as they are (admins and owners)
+ */
+export const updateDataSource = <ThrowOnError extends boolean = false>(options: Options<UpdateDataSourceData, ThrowOnError>): RequestResult<UpdateDataSourceResponses, UpdateDataSourceErrors, ThrowOnError> => (options.client ?? client).patch<UpdateDataSourceResponses, UpdateDataSourceErrors, ThrowOnError>({
+    url: '/api/data-sources/{id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',

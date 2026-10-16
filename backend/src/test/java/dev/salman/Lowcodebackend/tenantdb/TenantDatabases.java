@@ -60,11 +60,11 @@ public final class TenantDatabases {
 	private static TenantDatabase start(Dialect dialect) {
 		JdbcDatabaseContainer<?> container = switch (dialect) {
 			case POSTGRESQL -> new PostgreSQLContainer(DockerImageName.parse("postgres:18")).withDatabaseName("tenant")
-				.withUsername("tenant").withPassword("tenant");
+				.withUsername("tenant").withPassword("tnt-pw-7d41c");
 			case MYSQL -> new MySQLContainer(DockerImageName.parse("mysql:9")).withDatabaseName("tenant")
-				.withUsername("tenant").withPassword("tenant");
+				.withUsername("tenant").withPassword("tnt-pw-7d41c");
 			case ORACLE -> new OracleContainer(DockerImageName.parse("gvenzl/oracle-free:23-slim-faststart"))
-				.withUsername("tenant").withPassword("tenant");
+				.withUsername("tenant").withPassword("tnt-pw-7d41c");
 			case SQLSERVER -> new MSSQLServerContainer(DockerImageName.parse("mcr.microsoft.com/mssql/server:2022-latest"))
 				.acceptLicense();
 		};

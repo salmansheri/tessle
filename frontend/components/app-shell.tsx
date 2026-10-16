@@ -1,6 +1,6 @@
 "use client";
 
-import { AppWindow, Users } from "lucide-react";
+import { AppWindow, Database, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -12,12 +12,18 @@ import { useSession } from "@/lib/api/use-session";
 import { useWorkspace } from "@/lib/api/use-workspace";
 
 const NAV = [
-  { href: "/", label: "Apps", Icon: AppWindow },
-  { href: "/members", label: "Members", Icon: Users },
+  { href: "/", label: "Apps", Icon: AppWindow, builderOnly: false },
+  { href: "/data-sources", label: "Data sources", Icon: Database, builderOnly: true },
+  { href: "/members", label: "Members", Icon: Users, builderOnly: false },
 ];
 
+const BUILDERS = ["owner", "admin", "builder"];
+
+/** Data sources are for builders and above; editors and viewers never see the link (the server refuses them anyway). */
 function NavLinks({ pathname }: { pathname: string }) {
-  return NAV.map(({ href, label, Icon }) => (
+  const { role } = useWorkspace();
+  const canSeeData = !!role && BUILDERS.includes(role);
+  return NAV.filter((n) => !n.builderOnly || canSeeData).map(({ href, label, Icon }) => (
     <Link key={href} href={href} className="nav-link" aria-current={pathname === href ? "page" : undefined}>
       <Icon aria-hidden className="size-[1.125rem]" />
       {label}
@@ -88,7 +94,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Below the large breakpoint the rail is gone; keep switching and navigation one tap away. */}
         <div className="glass topbar grid gap-2 px-4 py-2 lg:hidden">
           <WorkspaceMenu />
-          <nav aria-label="Primary" className="grid grid-cols-2 gap-1">
+          <nav aria-label="Primary" className="grid grid-cols-3 gap-1">
             <NavLinks pathname={pathname} />
           </nav>
         </div>

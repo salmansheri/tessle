@@ -36,6 +36,8 @@ public class TestcontainersConfiguration {
 		return registry -> {
 			registry.add("tessle.jwt.secret", () -> "test-only-jwt-secret-at-least-32-bytes-long!!");
 			registry.add("tessle.otp.secret", () -> "test-only-otp-secret-at-least-32-bytes-long!!");
+			// 32 zero bytes, base64: a throwaway AES-256 key for tests only.
+			registry.add("tessle.secrets.master-key", () -> "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
 		};
 	}
 

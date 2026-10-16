@@ -38,6 +38,43 @@ export type AcceptedResponse = {
     role: string;
 };
 
+export type CreateDataSource = {
+    logicalName: string;
+    label: string;
+    type: string;
+    host: string;
+    port?: number;
+    database: string;
+    username: string;
+    password: string;
+};
+
+export type DataSourceResponse = {
+    id: string;
+    logicalName: string;
+    label: string;
+    type: 'postgresql' | 'mysql' | 'oracle' | 'sqlserver';
+    state: 'disabled' | 'enabled';
+    health: Health;
+    createdAt: string;
+    host?: string | null;
+    port?: number | null;
+    database?: string | null;
+    username?: string | null;
+};
+
+export type Health = {
+    lastTestOk?: boolean;
+    lastTestAt?: string;
+    lastTestError?: string;
+};
+
+export type TestResponse = {
+    ok: boolean;
+    error?: 'unreachable' | 'bad_credentials' | 'unknown_database' | 'failed';
+    message: string;
+};
+
 export type OtpVerification = {
     email: string;
     code: string;
@@ -68,6 +105,15 @@ export type AppResponse = {
 
 export type ChangeRole = {
     role: string;
+};
+
+export type UpdateDataSource = {
+    label?: string;
+    host?: string;
+    port?: number;
+    database?: string;
+    username?: string;
+    password?: string;
 };
 
 export type MemberResponse = {
@@ -227,6 +273,138 @@ export type AcceptInvitationResponses = {
 };
 
 export type AcceptInvitationResponse = AcceptInvitationResponses[keyof AcceptInvitationResponses];
+
+export type ListDataSourcesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/data-sources';
+};
+
+export type ListDataSourcesErrors = {
+    /**
+     * No active workspace
+     */
+    400: Array<DataSourceResponse>;
+    /**
+     * The caller's role cannot see Data sources
+     */
+    403: Array<DataSourceResponse>;
+};
+
+export type ListDataSourcesError = ListDataSourcesErrors[keyof ListDataSourcesErrors];
+
+export type ListDataSourcesResponses = {
+    /**
+     * The Data sources; connection details only for admins and owners
+     */
+    200: Array<DataSourceResponse>;
+};
+
+export type ListDataSourcesResponse = ListDataSourcesResponses[keyof ListDataSourcesResponses];
+
+export type CreateDataSourceData = {
+    body: CreateDataSource;
+    path?: never;
+    query?: never;
+    url: '/api/data-sources';
+};
+
+export type CreateDataSourceErrors = {
+    /**
+     * No active workspace, or invalid fields
+     */
+    400: DataSourceResponse;
+    /**
+     * The caller's role cannot manage Data sources
+     */
+    403: DataSourceResponse;
+    /**
+     * That logical name is already used in this workspace
+     */
+    409: DataSourceResponse;
+};
+
+export type CreateDataSourceError = CreateDataSourceErrors[keyof CreateDataSourceErrors];
+
+export type CreateDataSourceResponses = {
+    /**
+     * Created
+     */
+    201: DataSourceResponse;
+};
+
+export type CreateDataSourceResponse = CreateDataSourceResponses[keyof CreateDataSourceResponses];
+
+export type TestDataSourceData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/data-sources/{id}/test';
+};
+
+export type TestDataSourceErrors = {
+    /**
+     * The caller's role cannot manage Data sources
+     */
+    403: TestResponse;
+    /**
+     * No such Data source in this workspace
+     */
+    404: TestResponse;
+    /**
+     * The Data source was edited while the test ran, so the result was not recorded
+     */
+    409: TestResponse;
+};
+
+export type TestDataSourceError = TestDataSourceErrors[keyof TestDataSourceErrors];
+
+export type TestDataSourceResponses = {
+    /**
+     * The outcome; a failed connection is a normal answer, not an error
+     */
+    200: TestResponse;
+};
+
+export type TestDataSourceResponse = TestDataSourceResponses[keyof TestDataSourceResponses];
+
+export type EnableDataSourceData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/data-sources/{id}/enable';
+};
+
+export type EnableDataSourceErrors = {
+    /**
+     * The caller's role cannot manage Data sources
+     */
+    403: DataSourceResponse;
+    /**
+     * No such Data source in this workspace
+     */
+    404: DataSourceResponse;
+    /**
+     * The latest connection test has not passed
+     */
+    409: DataSourceResponse;
+};
+
+export type EnableDataSourceError = EnableDataSourceErrors[keyof EnableDataSourceErrors];
+
+export type EnableDataSourceResponses = {
+    /**
+     * Enabled
+     */
+    200: DataSourceResponse;
+};
+
+export type EnableDataSourceResponse = EnableDataSourceResponses[keyof EnableDataSourceResponses];
 
 export type RefreshSessionData = {
     body?: never;
@@ -478,6 +656,45 @@ export type ChangeMemberRoleResponses = {
 };
 
 export type ChangeMemberRoleResponse = ChangeMemberRoleResponses[keyof ChangeMemberRoleResponses];
+
+export type UpdateDataSourceData = {
+    body: UpdateDataSource;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/data-sources/{id}';
+};
+
+export type UpdateDataSourceErrors = {
+    /**
+     * Invalid fields, or an attempt to change the logical name
+     */
+    400: DataSourceResponse;
+    /**
+     * The caller's role cannot manage Data sources
+     */
+    403: DataSourceResponse;
+    /**
+     * No such Data source in this workspace
+     */
+    404: DataSourceResponse;
+    /**
+     * Someone else changed the Data source since it was read
+     */
+    409: DataSourceResponse;
+};
+
+export type UpdateDataSourceError = UpdateDataSourceErrors[keyof UpdateDataSourceErrors];
+
+export type UpdateDataSourceResponses = {
+    /**
+     * Updated. Changing how it connects clears its test result and disables it
+     */
+    200: DataSourceResponse;
+};
+
+export type UpdateDataSourceResponse = UpdateDataSourceResponses[keyof UpdateDataSourceResponses];
 
 export type ListMembersData = {
     body?: never;

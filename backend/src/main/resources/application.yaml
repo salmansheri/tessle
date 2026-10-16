@@ -6,6 +6,10 @@ server:
 spring:
   application:
     name: Lowcodebackend
+  jackson:
+    deserialization:
+      # Requests with fields we do not define are refused, so a client cannot slip in options (ADR 0006).
+      fail-on-unknown-properties: true
   jpa:
     # Platform queries must run inside a transaction, where tenant scoping is applied (ADR 0001).
     open-in-view: false
@@ -37,6 +41,11 @@ tessle:
     secret: ${TESSLE_JWT_SECRET:}
   otp:
     secret: ${TESSLE_OTP_SECRET:}
+  # Credentials master key: base64 of 32 random bytes (AES-256). The app refuses to start without it.
+  # Rotating means adding a key with a new id; each stored secret remembers the id that sealed it.
+  secrets:
+    master-key: ${TESSLE_SECRETS_MASTER_KEY:}
+    key-id: ${TESSLE_SECRETS_KEY_ID:k1}
   cookies:
     secure: ${TESSLE_COOKIES_SECURE:true}
   # Where emailed links point (the Next.js frontend).

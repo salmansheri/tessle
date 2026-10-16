@@ -9,11 +9,11 @@ const CAPABILITY: Record<RoleName, string> = {
 };
 
 /** The page's signature: a claim about what you may do, next to the role that proves it. */
-export function RoleNote({ role }: { role: RoleName }) {
+export function RoleNote({ role, text }: { role: RoleName; text?: string }) {
   return (
     <p className="proof">
       <span className={`pill pill-${role}`}>{role}</span>
-      <span>{CAPABILITY[role]}</span>
+      <span>{text ?? CAPABILITY[role]}</span>
     </p>
   );
 }

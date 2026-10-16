@@ -3,11 +3,11 @@ package dev.salman.Lowcodebackend.workspace;
 import java.util.Optional;
 
 /** Membership roles, weakest first. */
-enum Role {
+public enum Role {
 
 	viewer, editor, builder, admin, owner;
 
-	boolean atLeast(Role other) {
+	public boolean atLeast(Role other) {
 		return ordinal() >= other.ordinal();
 	}
 

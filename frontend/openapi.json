@@ -213,6 +213,227 @@
         }
       }
     },
+    "/api/data-sources" : {
+      "get" : {
+        "tags" : [ "data-sources-controller" ],
+        "summary" : "Data sources in the active Workspace (builders and above)",
+        "operationId" : "listDataSources",
+        "responses" : {
+          "200" : {
+            "description" : "The Data sources; connection details only for admins and owners",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DataSourceResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "No active workspace",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DataSourceResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller's role cannot see Data sources",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DataSourceResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "data-sources-controller" ],
+        "summary" : "Add a Data source, disabled until a connection test passes (admins and owners)",
+        "operationId" : "createDataSource",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateDataSource"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "No active workspace, or invalid fields",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller's role cannot manage Data sources",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "That logical name is already used in this workspace",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data-sources/{id}/test" : {
+      "post" : {
+        "tags" : [ "data-sources-controller" ],
+        "summary" : "Try the connection and record the result (admins and owners)",
+        "operationId" : "testDataSource",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The outcome; a failed connection is a normal answer, not an error",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TestResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller's role cannot manage Data sources",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TestResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No such Data source in this workspace",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TestResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "The Data source was edited while the test ran, so the result was not recorded",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TestResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data-sources/{id}/enable" : {
+      "post" : {
+        "tags" : [ "data-sources-controller" ],
+        "summary" : "Enable a Data source whose latest connection test passed (admins and owners)",
+        "operationId" : "enableDataSource",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Enabled",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller's role cannot manage Data sources",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No such Data source in this workspace",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "The latest connection test has not passed",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/refresh" : {
       "post" : {
         "tags" : [ "auth-controller" ],
@@ -508,6 +729,84 @@
         }
       }
     },
+    "/api/data-sources/{id}" : {
+      "patch" : {
+        "tags" : [ "data-sources-controller" ],
+        "summary" : "Edit a Data source; omitted fields stay as they are (admins and owners)",
+        "operationId" : "updateDataSource",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateDataSource"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Updated. Changing how it connects clears its test result and disables it",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid fields, or an attempt to change the logical name",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller's role cannot manage Data sources",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No such Data source in this workspace",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Someone else changed the Data source since it was read",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/members" : {
       "get" : {
         "tags" : [ "members-controller" ],
@@ -742,6 +1041,131 @@
         },
         "required" : [ "role", "workspaceId" ]
       },
+      "CreateDataSource" : {
+        "type" : "object",
+        "properties" : {
+          "logicalName" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "^[a-z][a-z0-9_]{1,39}$"
+          },
+          "label" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0,
+            "pattern" : "^[^\\p{Cntrl}\\u0080-\\u009f]*$"
+          },
+          "type" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "postgresql"
+          },
+          "host" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "^[A-Za-z0-9._-]{1,253}$"
+          },
+          "port" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 65535,
+            "minimum" : 1
+          },
+          "database" : {
+            "type" : "string",
+            "maxLength" : 128,
+            "minLength" : 0,
+            "pattern" : "^[^\\p{Cntrl}\\u0080-\\u009f]*$"
+          },
+          "username" : {
+            "type" : "string",
+            "maxLength" : 128,
+            "minLength" : 0,
+            "pattern" : "^[^\\p{Cntrl}\\u0080-\\u009f]*$"
+          },
+          "password" : {
+            "type" : "string",
+            "maxLength" : 256,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "database", "host", "label", "logicalName", "password", "type", "username" ]
+      },
+      "DataSourceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "logicalName" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "postgresql", "mysql", "oracle", "sqlserver" ]
+          },
+          "state" : {
+            "type" : "string",
+            "enum" : [ "disabled", "enabled" ]
+          },
+          "health" : {
+            "$ref" : "#/components/schemas/Health"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "host" : {
+            "type" : [ "string", "null" ]
+          },
+          "port" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "database" : {
+            "type" : [ "string", "null" ]
+          },
+          "username" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "createdAt", "health", "id", "label", "logicalName", "state", "type" ]
+      },
+      "Health" : {
+        "type" : "object",
+        "properties" : {
+          "lastTestOk" : {
+            "type" : "boolean"
+          },
+          "lastTestAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lastTestError" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TestResponse" : {
+        "type" : "object",
+        "properties" : {
+          "ok" : {
+            "type" : "boolean"
+          },
+          "error" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "unreachable", "bad_credentials", "unknown_database", "failed" ]
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "message", "ok" ]
+      },
       "OtpVerification" : {
         "type" : "object",
         "properties" : {
@@ -826,6 +1250,41 @@
           }
         },
         "required" : [ "role" ]
+      },
+      "UpdateDataSource" : {
+        "type" : "object",
+        "properties" : {
+          "label" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 1
+          },
+          "host" : {
+            "type" : "string",
+            "pattern" : "^[A-Za-z0-9._-]{1,253}$"
+          },
+          "port" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 65535,
+            "minimum" : 1
+          },
+          "database" : {
+            "type" : "string",
+            "maxLength" : 128,
+            "minLength" : 1
+          },
+          "username" : {
+            "type" : "string",
+            "maxLength" : 128,
+            "minLength" : 1
+          },
+          "password" : {
+            "type" : "string",
+            "maxLength" : 256,
+            "minLength" : 1
+          }
+        }
       },
       "MemberResponse" : {
         "type" : "object",

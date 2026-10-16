@@ -226,6 +226,47 @@ class TenantIsolationTests {
 	}
 
 	@Test
+	void dataSourcesAreScopedToTheActiveWorkspaceAndOnlyAdminsCanWriteOrSeeTheAuditTrail() {
+		UUID[] people = addAdminAndViewer();
+		UUID dave = people[0]; // admin of Alice Inc
+		UUID erin = people[1]; // viewer
+		admin.update("delete from audit_events");
+
+		actAs(alice, wsAlice);
+		probe.insertDataSource(wsAlice, "alice_db", alice);
+		actAs(bob, wsBob);
+		probe.insertDataSource(wsBob, "bob_db", bob);
+
+		actAs(alice, wsAlice);
+		assertThat(probe.allDataSourceNames()).as("a query without any filter").containsExactly("alice_db");
+		actAs(alice, wsBob);
+		assertThat(probe.allDataSourceNames()).as("forged active workspace").isEmpty();
+		assertThatThrownBy(() -> probe.insertDataSource(wsBob, "planted", alice)).isInstanceOf(DataAccessException.class);
+		actAs(alice, null);
+		assertThat(probe.allDataSourceNames()).as("no active workspace").isEmpty();
+
+		actAs(erin, wsAlice); // viewer: cannot even list
+		assertThat(probe.allDataSourceNames()).isEmpty();
+		assertThatThrownBy(() -> probe.insertDataSource(wsAlice, "viewer_db", erin)).isInstanceOf(DataAccessException.class);
+		assertThat(probe.renameDataSources("x")).isZero();
+		assertThat(probe.deleteAllDataSources()).isZero();
+
+		actAs(dave, wsAlice); // admin
+		probe.insertDataSource(wsAlice, "admin_db", dave);
+		assertThat(probe.allDataSourceNames()).containsExactly("admin_db", "alice_db");
+		assertThat(probe.renameDataSources("x")).isEqualTo(2);
+
+		// Audit trail: append-only and readable by admins alone, never editable or deletable by the application.
+		probe.recordAudit(wsAlice, dave);
+		assertThat(probe.auditEventCount()).isEqualTo(1);
+		assertThat(probe.rewriteAuditEvents()).isZero();
+		assertThat(probe.deleteAuditEvents()).isZero();
+		assertThatThrownBy(() -> probe.recordAudit(wsAlice, alice)).as("cannot attribute to someone else").isInstanceOf(DataAccessException.class);
+		actAs(erin, wsAlice);
+		assertThat(probe.auditEventCount()).isZero();
+	}
+
+	@Test
 	void onlyBuildersAndAboveCanChangeOrDeleteAppsAndOnlyInTheirActiveWorkspace() {
 		UUID[] people = addAdminAndViewer();
 		UUID dave = people[0];
