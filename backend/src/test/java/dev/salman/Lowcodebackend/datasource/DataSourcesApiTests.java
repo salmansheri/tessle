@@ -31,7 +31,7 @@ import tools.jackson.databind.ObjectMapper;
 /** Data sources through the HTTP API, against the real platform stack and a real tenant PostgreSQL. */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({ TestcontainersConfiguration.class, TestSessions.class })
+@Import({ TestcontainersConfiguration.class, TestSessions.class, TestNetwork.class })
 class DataSourcesApiTests {
 
 	static final String SECRET = "s3cret-Pw-9f2c1";
@@ -95,10 +95,11 @@ class DataSourcesApiTests {
 	/** A request body for a Data source pointing at the seeded tenant PostgreSQL, with the given password. */
 	String sourceJson(String logicalName, String password) {
 		TenantDatabase db = TenantDatabases.postgres();
+		// The tenant server uses a self-signed certificate, so the data source trusts it as its CA.
 		return """
 				{"logicalName":"%s","label":"Northwind","type":"postgresql","host":"%s","port":%d,
-				 "database":"tenant","username":"%s","password":"%s"}
-				""".formatted(logicalName, db.host(), db.port(), db.username(), password);
+				 "database":"tenant","username":"%s","password":"%s","caCertificate":%s}
+				""".formatted(logicalName, db.host(), db.port(), db.username(), password, json.writeValueAsString(db.caCertificatePem()));
 	}
 
 	@Test

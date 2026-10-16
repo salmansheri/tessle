@@ -1087,6 +1087,16 @@
             "type" : "string",
             "maxLength" : 256,
             "minLength" : 0
+          },
+          "verifyCertificate" : {
+            "type" : "boolean",
+            "description" : "Check the server's certificate and host name. On unless explicitly turned off, which is audited."
+          },
+          "caCertificate" : {
+            "type" : "string",
+            "description" : "PEM certificate to trust for this server (write-only)",
+            "maxLength" : 65536,
+            "minLength" : 0
           }
         },
         "required" : [ "database", "host", "label", "logicalName", "password", "type", "username" ]
@@ -1131,6 +1141,12 @@
           },
           "username" : {
             "type" : [ "string", "null" ]
+          },
+          "tlsVerify" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "hasCaCertificate" : {
+            "type" : [ "boolean", "null" ]
           }
         },
         "required" : [ "createdAt", "health", "id", "label", "logicalName", "state", "type" ]
@@ -1158,7 +1174,7 @@
           },
           "error" : {
             "type" : [ "string", "null" ],
-            "enum" : [ "unreachable", "bad_credentials", "unknown_database", "failed" ]
+            "enum" : [ "unreachable", "blocked_address", "tls_failed", "bad_credentials", "unknown_database", "failed" ]
           },
           "message" : {
             "type" : "string"
@@ -1283,6 +1299,15 @@
             "type" : "string",
             "maxLength" : 256,
             "minLength" : 1
+          },
+          "verifyCertificate" : {
+            "type" : "boolean"
+          },
+          "caCertificate" : {
+            "type" : "string",
+            "description" : "PEM certificate to trust; an empty string removes it",
+            "maxLength" : 65536,
+            "minLength" : 0
           }
         }
       },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleAlert, CircleCheck, CircleDashed, Pencil, Plus, PlugZap } from "lucide-react";
+import { CircleAlert, CircleCheck, CircleDashed, Pencil, Plus, PlugZap, ShieldAlert } from "lucide-react";
 import { useId, useState } from "react";
 import { RoleNote } from "@/components/role-note";
 import { ensureCsrf } from "@/lib/api/csrf";
@@ -59,17 +59,29 @@ function Health({ ds }: { ds: DataSourceResponse }) {
   );
 }
 
-type Draft = { label: string; logicalName: string; host: string; port: string; database: string; username: string; password: string };
-const EMPTY: Draft = { label: "", logicalName: "", host: "", port: "5432", database: "", username: "", password: "" };
+type Draft = {
+  label: string;
+  logicalName: string;
+  host: string;
+  port: string;
+  database: string;
+  username: string;
+  password: string;
+  verify: boolean;
+  acknowledgedRisk: boolean;
+  caCertificate: string;
+  removeCa: boolean;
+};
+const EMPTY: Draft = { label: "", logicalName: "", host: "", port: "5432", database: "", username: "", password: "", verify: true, acknowledgedRisk: false, caCertificate: "", removeCa: false };
 
 function Form({ editing, onDone }: { editing: DataSourceResponse | null; onDone: () => void }) {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<Draft>(
     editing
-      ? { label: editing.label, logicalName: editing.logicalName, host: editing.host ?? "", port: String(editing.port ?? 5432), database: editing.database ?? "", username: editing.username ?? "", password: "" }
+      ? { label: editing.label, logicalName: editing.logicalName, host: editing.host ?? "", port: String(editing.port ?? 5432), database: editing.database ?? "", username: editing.username ?? "", password: "", verify: editing.tlsVerify !== false, acknowledgedRisk: editing.tlsVerify === false, caCertificate: "", removeCa: false }
       : EMPTY,
   );
-  const blank = [draft.label, draft.host, draft.database, draft.username].some((v) => v.trim() === "");
+  const blank = [draft.label, draft.host, draft.database, draft.username].some((v) => v.trim() === "") || (!draft.verify && !draft.acknowledgedRisk);
   const set = (key: keyof Draft) => (e: React.ChangeEvent<HTMLInputElement>) => setDraft((d) => ({ ...d, [key]: e.target.value }));
 
   const save = useMutation({
@@ -81,7 +93,7 @@ function Form({ editing, onDone }: { editing: DataSourceResponse | null; onDone:
           withRenewal(() =>
             updateDataSource({
               path: { id: editing.id },
-              body: { label: draft.label.trim(), host: draft.host.trim(), port, database: draft.database.trim(), username: draft.username.trim(), ...(draft.password ? { password: draft.password } : {}) },
+              body: { label: draft.label.trim(), host: draft.host.trim(), port, database: draft.database.trim(), username: draft.username.trim(), verifyCertificate: draft.verify, ...(draft.password ? { password: draft.password } : {}), ...(draft.removeCa ? { caCertificate: "" } : draft.caCertificate.trim() ? { caCertificate: draft.caCertificate.trim() } : {}) },
             }),
           ),
         );
@@ -89,7 +101,7 @@ function Form({ editing, onDone }: { editing: DataSourceResponse | null; onDone:
         await unwrap(
           withRenewal(() =>
             createDataSource({
-              body: { logicalName: draft.logicalName.trim(), label: draft.label.trim(), type: "postgresql", host: draft.host.trim(), port, database: draft.database.trim(), username: draft.username.trim(), password: draft.password },
+              body: { logicalName: draft.logicalName.trim(), label: draft.label.trim(), type: "postgresql", host: draft.host.trim(), port, database: draft.database.trim(), username: draft.username.trim(), password: draft.password, verifyCertificate: draft.verify, ...(draft.caCertificate.trim() ? { caCertificate: draft.caCertificate.trim() } : {}) },
             }),
           ),
         );
@@ -147,6 +159,39 @@ function Form({ editing, onDone }: { editing: DataSourceResponse | null; onDone:
         <input className="input" type="password" required={!editing} maxLength={256} autoComplete="new-password" value={draft.password} onChange={set("password")} aria-describedby="pw-hint" />
         <span id="pw-hint" className="field-hint">{editing ? "Leave blank to keep the current password. It is never shown." : "Stored encrypted and never shown again."}</span>
       </label>
+      <fieldset className="grid gap-3 sm:col-span-2">
+        <legend className="mb-1 font-semibold">Encryption</legend>
+        <p className="text-ink-2">Connections always use TLS. By default Tessle also checks that the server&apos;s certificate is trusted and matches the host name.</p>
+        <label className="field">
+          Server CA certificate (optional)
+          <textarea className="input min-h-24 font-mono text-[0.8125rem]" value={draft.caCertificate} onChange={(e) => setDraft((d) => ({ ...d, caCertificate: e.target.value, removeCa: false }))} placeholder="-----BEGIN CERTIFICATE-----" spellCheck={false} aria-describedby="ca-hint" />
+          <span id="ca-hint" className="field-hint">
+            For servers with a private or self-signed certificate. {editing?.hasCaCertificate ? "A certificate is stored; paste a new one to replace it." : "Stored encrypted."}
+          </span>
+        </label>
+        {editing?.hasCaCertificate && (
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={draft.removeCa} onChange={(e) => setDraft((d) => ({ ...d, removeCa: e.target.checked, caCertificate: e.target.checked ? "" : d.caCertificate }))} />
+            Remove the stored CA certificate
+          </label>
+        )}
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={draft.verify} onChange={(e) => setDraft((d) => ({ ...d, verify: e.target.checked, acknowledgedRisk: false }))} />
+          Verify the server&apos;s certificate (recommended)
+        </label>
+        {!draft.verify && (
+          <div role="alert" className="grid gap-2 rounded-lg border border-line bg-[var(--warn-bg)] p-3 text-[var(--warn-fg)]">
+            <p className="flex items-start gap-2 font-semibold">
+              <ShieldAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+              Without verification, anyone on the network path could impersonate this database and read the password and data.
+            </p>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={draft.acknowledgedRisk} onChange={(e) => setDraft((d) => ({ ...d, acknowledgedRisk: e.target.checked }))} />
+              I understand the risk. This is recorded in the audit log.
+            </label>
+          </div>
+        )}
+      </fieldset>
       {editing && (
         <p className="proof sm:col-span-2">Changing how it connects clears the last test and switches it off until you test and enable it again.</p>
       )}
@@ -273,7 +318,16 @@ export function DataSourcesView() {
                           <span className="text-ink-2">{ds.logicalName}</span>
                         </td>
                         <td>{TYPE_LABEL[ds.type] ?? ds.type}</td>
-                        <td><span className={`pill ${ds.state === "enabled" ? "pill-ok" : ""}`}>{ds.state === "enabled" ? "Enabled" : "Disabled"}</span></td>
+                        <td>
+                          <span className="inline-flex flex-wrap items-center gap-2">
+                            <span className={`pill ${ds.state === "enabled" ? "pill-ok" : ""}`}>{ds.state === "enabled" ? "Enabled" : "Disabled"}</span>
+                            {ds.tlsVerify === false && (
+                              <span className="pill pill-warn" title="The server's certificate is not checked">
+                                <ShieldAlert aria-hidden className="size-3.5" />Certificate not verified
+                              </span>
+                            )}
+                          </span>
+                        </td>
                         <td><Health ds={ds} /></td>
                         {canManage && (
                           <td className="num">

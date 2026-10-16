@@ -21,20 +21,25 @@ class DataSourceService {
 	record View(DataSourceRecord record, boolean details) {
 	}
 
+	/** verifyCertificate null means the default (on); caCertificate is PEM text or null. */
 	record NewDataSource(String logicalName, String label, String type, String host, int port, String database,
-			String username, String password) {
+			String username, String password, Boolean verifyCertificate, String caCertificate) {
 	}
 
 	/** Fields left null are unchanged. The logical name and type are not editable. */
-	record Edit(String label, String host, Integer port, String database, String username, String password) {
+	record Edit(String label, String host, Integer port, String database, String username, String password,
+			Boolean verifyCertificate, String caCertificate) {
 	}
 
 	private final DataSourceStore store;
 	private final MembershipRoles roles;
 	private final SecretBox secrets;
 	private final ConnectionTester tester;
+	private final NetworkPolicy policy;
 
-	DataSourceService(DataSourceStore store, MembershipRoles roles, SecretBox secrets, ConnectionTester tester) {
+	DataSourceService(DataSourceStore store, MembershipRoles roles, SecretBox secrets, ConnectionTester tester,
+			NetworkPolicy policy) {
+		this.policy = policy;
 		this.store = store;
 		this.roles = roles;
 		this.secrets = secrets;
@@ -45,9 +50,11 @@ class DataSourceService {
 		roles.require(user, workspace, Role.admin);
 		UUID id = UUID.randomUUID();
 		SecretBox.Sealed password = secrets.seal(n.password(), context(workspace, id));
+		SecretBox.Sealed ca = sealCa(n.caCertificate(), workspace, id);
 		DataSourceRecord created = store.create(user, new DataSourceRecord(id, workspace, n.logicalName(), n.label().trim(),
 				n.type(), n.host(), n.port(), n.database(), n.username(), password.ciphertext(), password.keyId(),
-				"disabled", null, null, null, null, null));
+				n.verifyCertificate() == null || n.verifyCertificate(), ca == null ? null : ca.ciphertext(),
+				ca == null ? null : ca.keyId(), "disabled", null, null, null, null, null));
 		return new View(created, true);
 	}
 
@@ -78,13 +85,26 @@ class DataSourceService {
 			keyId = sealed.keyId();
 			changed.add("password");
 		}
+		boolean tlsVerify = ds.tlsVerify();
+		if (e.verifyCertificate() != null && e.verifyCertificate() != ds.tlsVerify()) {
+			tlsVerify = e.verifyCertificate();
+			changed.add("verifyCertificate");
+		}
+		byte[] caCiphertext = ds.caCiphertext();
+		String caKeyId = ds.caKeyId();
+		if (e.caCertificate() != null && caDiffers(ds, e.caCertificate(), workspace, id)) {
+			SecretBox.Sealed ca = sealCa(e.caCertificate(), workspace, id); // empty text removes it
+			caCiphertext = ca == null ? null : ca.ciphertext();
+			caKeyId = ca == null ? null : ca.keyId();
+			changed.add("caCertificate");
+		}
 		boolean connection = changed.stream().anyMatch(c -> !c.equals("label"));
 		if (changed.isEmpty()) {
 			return new View(ds, true);
 		}
 		DataSourceRecord next = new DataSourceRecord(id, workspace, ds.logicalName(), label, ds.type(), host, port, database,
-				username, ciphertext, keyId, ds.state(), ds.lastTestOk(), ds.lastTestAt(), ds.lastTestError(), ds.createdAt(), ds.updatedAt());
-		return new View(store.update(user, next, connection, changed).orElseThrow(DataSourceService::changedMeanwhile), true);
+				username, ciphertext, keyId, tlsVerify, caCiphertext, caKeyId, ds.state(), ds.lastTestOk(), ds.lastTestAt(), ds.lastTestError(), ds.createdAt(), ds.updatedAt());
+		return new View(store.update(user, next, connection, changed, ds.tlsVerify() && !tlsVerify).orElseThrow(DataSourceService::changedMeanwhile), true);
 	}
 
 	private static String pick(String proposed, String current, String field, List<String> changed) {
@@ -105,7 +125,9 @@ class DataSourceService {
 		roles.require(user, workspace, Role.admin);
 		DataSourceRecord ds = store.find(workspace, id).orElseThrow(DataSourceService::notFound);
 		String password = secrets.open(ds.passwordCiphertext(), ds.secretKeyId(), context(workspace, id));
-		ConnectionTester.Result result = tester.test(ds.type(), ds.host(), ds.port(), ds.database(), ds.username(), password);
+		String ca = ds.caCiphertext() == null ? null : secrets.open(ds.caCiphertext(), ds.caKeyId(), caContext(workspace, id));
+		ConnectionTester.Result result = tester.test(new ConnectionTester.Target(ds.type(), ds.host(), ds.port(), ds.database(),
+				ds.username(), password, ds.tlsVerify(), ca));
 		if (!store.recordTest(workspace, user, id, ds.updatedAt(), result.ok(), result.error(), result.message())) {
 			throw changedMeanwhile();
 		}
@@ -115,7 +137,14 @@ class DataSourceService {
 	View enable(UUID user, UUID workspace, UUID id) {
 		roles.require(user, workspace, Role.admin);
 		DataSourceRecord ds = store.find(workspace, id).orElseThrow(DataSourceService::notFound);
-		if (!store.enable(workspace, user, id)) {
+		// The address is checked again at enablement: the network policy may have changed since the last test.
+		try {
+			policy.resolve(ds.host());
+		}
+		catch (NetworkPolicy.Refused | NetworkPolicy.NotFound refused) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "That address is not currently allowed");
+		}
+		if (!store.enable(workspace, user, id, ds.updatedAt())) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "A connection test must pass before enabling");
 		}
 		return new View(store.find(workspace, ds.id()).orElseThrow(), true);
@@ -127,6 +156,33 @@ class DataSourceService {
 
 	private static ResponseStatusException notFound() {
 		return new ResponseStatusException(HttpStatus.NOT_FOUND);
+	}
+
+	/** Seals CA certificate text; blank means none. Anything that is not a PEM certificate is a 400. */
+	private SecretBox.Sealed sealCa(String pem, UUID workspace, UUID id) {
+		if (pem == null || pem.isBlank()) {
+			return null;
+		}
+		try {
+			TenantConnections.parseCertificates(pem);
+		}
+		catch (IllegalArgumentException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The CA certificate must be PEM encoded");
+		}
+		return secrets.seal(pem, caContext(workspace, id));
+	}
+
+	/** True unless the proposed CA is what is already stored (or both are absent), so a no-op edit changes nothing. */
+	private boolean caDiffers(DataSourceRecord ds, String proposed, UUID workspace, UUID id) {
+		if (proposed.isBlank()) {
+			return ds.caCiphertext() != null;
+		}
+		return ds.caCiphertext() == null
+				|| !secrets.open(ds.caCiphertext(), ds.caKeyId(), caContext(workspace, id)).trim().equals(proposed.trim());
+	}
+
+	static String caContext(UUID workspace, UUID id) {
+		return "data-source:" + workspace + ":" + id + ":ca";
 	}
 
 	/** Binds a sealed secret to its row, so it cannot be moved to another Data source or Workspace. */

@@ -47,6 +47,14 @@ export type CreateDataSource = {
     database: string;
     username: string;
     password: string;
+    /**
+     * Check the server's certificate and host name. On unless explicitly turned off, which is audited.
+     */
+    verifyCertificate?: boolean;
+    /**
+     * PEM certificate to trust for this server (write-only)
+     */
+    caCertificate?: string;
 };
 
 export type DataSourceResponse = {
@@ -61,6 +69,8 @@ export type DataSourceResponse = {
     port?: number | null;
     database?: string | null;
     username?: string | null;
+    tlsVerify?: boolean | null;
+    hasCaCertificate?: boolean | null;
 };
 
 export type Health = {
@@ -71,7 +81,7 @@ export type Health = {
 
 export type TestResponse = {
     ok: boolean;
-    error?: 'unreachable' | 'bad_credentials' | 'unknown_database' | 'failed';
+    error?: 'unreachable' | 'blocked_address' | 'tls_failed' | 'bad_credentials' | 'unknown_database' | 'failed';
     message: string;
 };
 
@@ -114,6 +124,11 @@ export type UpdateDataSource = {
     database?: string;
     username?: string;
     password?: string;
+    verifyCertificate?: boolean;
+    /**
+     * PEM certificate to trust; an empty string removes it
+     */
+    caCertificate?: string;
 };
 
 export type MemberResponse = {

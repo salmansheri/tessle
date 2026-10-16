@@ -1,0 +1,8 @@
+# Local development only (activate with SPRING_PROFILES_ACTIVE=dev; the VS Code launch config does).
+tessle:
+  datasource:
+    # Docker's bridge networks, so the Compose tenant databases are reachable by container address. Loopback stays
+    # refused (ADR 0007): use the container IP, e.g.
+    #   docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' backend-tenant-postgres-1
+    # with the database's own port (5432, 3306, 1521, 1433), not the published one.
+    allowed-networks: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8

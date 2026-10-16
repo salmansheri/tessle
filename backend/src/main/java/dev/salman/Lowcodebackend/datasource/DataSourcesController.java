@@ -48,7 +48,9 @@ class DataSourcesController {
 			@Min(1) @Max(65535) int port,
 			@NotBlank @Size(max = 128) @Pattern(regexp = PLAIN_TEXT, message = "must not contain control characters") String database,
 			@NotBlank @Size(max = 128) @Pattern(regexp = PLAIN_TEXT, message = "must not contain control characters") String username,
-			@NotBlank @Size(max = 256) String password) {
+			@NotBlank @Size(max = 256) String password,
+			@Schema(description = "Check the server's certificate and host name. On unless explicitly turned off, which is audited.") Boolean verifyCertificate,
+			@Schema(description = "PEM certificate to trust for this server (write-only)") @Size(max = 65536) String caCertificate) {
 	}
 
 	/** Every field optional; absent means unchanged. The logical name and type cannot be edited. */
@@ -58,7 +60,8 @@ class DataSourcesController {
 			@Min(1) @Max(65535) Integer port,
 			@Size(min = 1, max = 128) @Pattern(regexp = PLAIN_TEXT, message = "must not contain control characters") @Pattern(regexp = VISIBLE, message = "must contain a visible character") String database,
 			@Size(min = 1, max = 128) @Pattern(regexp = PLAIN_TEXT, message = "must not contain control characters") @Pattern(regexp = VISIBLE, message = "must contain a visible character") String username,
-			@Size(min = 1, max = 256) String password) {
+			@Size(min = 1, max = 256) String password, Boolean verifyCertificate,
+			@Schema(description = "PEM certificate to trust; an empty string removes it") @Size(max = 65536) String caCertificate) {
 	}
 
 	record Health(Boolean lastTestOk, Instant lastTestAt, String lastTestError) {
@@ -73,20 +76,21 @@ class DataSourcesController {
 			@Schema(requiredMode = Schema.RequiredMode.REQUIRED) Health health,
 			@Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant createdAt,
 			@Schema(nullable = true) String host, @Schema(nullable = true) Integer port,
-			@Schema(nullable = true) String database, @Schema(nullable = true) String username) {
+			@Schema(nullable = true) String database, @Schema(nullable = true) String username,
+			@Schema(nullable = true) Boolean tlsVerify, @Schema(nullable = true) Boolean hasCaCertificate) {
 
 		static DataSourceResponse of(DataSourceService.View v) {
 			DataSourceRecord r = v.record();
 			return new DataSourceResponse(r.id(), r.logicalName(), r.label(), r.type(), r.state(),
 					new Health(r.lastTestOk(), r.lastTestAt(), r.lastTestError()), r.createdAt(),
 					v.details() ? r.host() : null, v.details() ? r.port() : null, v.details() ? r.database() : null,
-					v.details() ? r.username() : null);
+					v.details() ? r.username() : null, v.details() ? r.tlsVerify() : null, v.details() ? r.caCiphertext() != null : null);
 		}
 
 	}
 
 	record TestResponse(@Schema(requiredMode = Schema.RequiredMode.REQUIRED) boolean ok,
-			@Schema(nullable = true, allowableValues = { "unreachable", "bad_credentials", "unknown_database", "failed" }) String error,
+			@Schema(nullable = true, allowableValues = { "unreachable", "blocked_address", "tls_failed", "bad_credentials", "unknown_database", "failed" }) String error,
 			@Schema(requiredMode = Schema.RequiredMode.REQUIRED) String message) {
 	}
 
@@ -116,7 +120,7 @@ class DataSourcesController {
 			@Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt) {
 		DataSourceService.View created = sources.create(ActiveWorkspace.user(jwt), ActiveWorkspace.of(jwt),
 				new DataSourceService.NewDataSource(body.logicalName(), body.label(), body.type(), body.host(), body.port(),
-						body.database(), body.username(), body.password()));
+						body.database(), body.username(), body.password(), body.verifyCertificate(), body.caCertificate()));
 		return ResponseEntity.status(HttpStatus.CREATED).body(DataSourceResponse.of(created));
 	}
 
@@ -151,7 +155,7 @@ class DataSourcesController {
 	DataSourceResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateDataSource body,
 			@Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt) {
 		return DataSourceResponse.of(sources.update(ActiveWorkspace.user(jwt), ActiveWorkspace.of(jwt), id,
-				new DataSourceService.Edit(body.label(), body.host(), body.port(), body.database(), body.username(), body.password())));
+				new DataSourceService.Edit(body.label(), body.host(), body.port(), body.database(), body.username(), body.password(), body.verifyCertificate(), body.caCertificate())));
 	}
 
 }

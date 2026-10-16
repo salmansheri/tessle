@@ -59,8 +59,7 @@ public final class TenantDatabases {
 
 	private static TenantDatabase start(Dialect dialect) {
 		JdbcDatabaseContainer<?> container = switch (dialect) {
-			case POSTGRESQL -> new PostgreSQLContainer(DockerImageName.parse("postgres:18")).withDatabaseName("tenant")
-				.withUsername("tenant").withPassword("tnt-pw-7d41c");
+			case POSTGRESQL -> tlsPostgres();
 			case MYSQL -> new MySQLContainer(DockerImageName.parse("mysql:9")).withDatabaseName("tenant")
 				.withUsername("tenant").withPassword("tnt-pw-7d41c");
 			case ORACLE -> new OracleContainer(DockerImageName.parse("gvenzl/oracle-free:23-slim-faststart"))
@@ -79,7 +78,50 @@ public final class TenantDatabases {
 		// SQL Server creates the tenant database in its seed script, so the URL has to name it afterwards.
 		String url = dialect == Dialect.SQLSERVER ? container.getJdbcUrl() + ";databaseName=tenant" : container.getJdbcUrl();
 		return new TenantDatabase(dialect, container.getHost(), container.getMappedPort(portOf(dialect)), url,
-				container.getUsername(), container.getPassword());
+				container.getUsername(), container.getPassword(), caCertificate(dialect, container));
+	}
+
+	private static final String TLS_DIR = "/tls";
+
+	/**
+	 * PostgreSQL that serves TLS with a throwaway self-signed certificate, valid for the names the tests connect by
+	 * ({@code db.test.internal}, {@code localhost}, 127.0.0.1). The certificate doubles as the CA to trust.
+	 */
+	private static PostgreSQLContainer tlsPostgres() {
+		String script = "mkdir -p " + TLS_DIR + " && cd " + TLS_DIR
+				+ " && openssl req -x509 -newkey rsa:2048 -nodes -keyout server.key -out server.crt -days 2"
+				+ " -subj /CN=db.test.internal -addext subjectAltName=DNS:db.test.internal,DNS:localhost,IP:127.0.0.1"
+				+ " && chown postgres:postgres server.key server.crt && chmod 600 server.key"
+				+ " && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=" + TLS_DIR + "/server.crt"
+				+ " -c ssl_key_file=" + TLS_DIR + "/server.key";
+		return new PostgreSQLContainer(DockerImageName.parse("postgres:18")) {
+			@Override
+			protected void configure() {
+				super.configure();
+				setCommand("sh", "-c", script);
+			}
+		}.withDatabaseName("tenant").withUsername("tenant").withPassword("tnt-pw-7d41c");
+	}
+
+	private static String caCertificate(Dialect dialect, JdbcDatabaseContainer<?> container) {
+		if (dialect != Dialect.POSTGRESQL) {
+			return null;
+		}
+		return container.copyFileFromContainer(TLS_DIR + "/server.crt", in -> new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+	}
+
+	private static TenantDatabase plainPostgres;
+
+	/** A PostgreSQL without TLS, to prove that a server that cannot encrypt is refused. */
+	public static synchronized TenantDatabase postgresWithoutTls() {
+		if (plainPostgres == null) {
+			PostgreSQLContainer container = new PostgreSQLContainer(DockerImageName.parse("postgres:18")).withDatabaseName("tenant")
+				.withUsername("tenant").withPassword("tnt-pw-7d41c");
+			container.start();
+			plainPostgres = new TenantDatabase(Dialect.POSTGRESQL, container.getHost(), container.getMappedPort(5432),
+					container.getJdbcUrl(), container.getUsername(), container.getPassword(), null);
+		}
+		return plainPostgres;
 	}
 
 	private static int portOf(Dialect dialect) {

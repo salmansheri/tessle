@@ -46,6 +46,10 @@ tessle:
   secrets:
     master-key: ${TESSLE_SECRETS_MASTER_KEY:}
     key-id: ${TESSLE_SECRETS_KEY_ID:k1}
+  # Data sources may reach public addresses only, plus any private ranges listed here (CIDR, comma separated).
+  # Loopback, link-local and cloud-metadata addresses are refused whatever is listed (ADR 0007).
+  datasource:
+    allowed-networks: ${TESSLE_DATASOURCE_ALLOWED_NETWORKS:}
   cookies:
     secure: ${TESSLE_COOKIES_SECURE:true}
   # Where emailed links point (the Next.js frontend).
