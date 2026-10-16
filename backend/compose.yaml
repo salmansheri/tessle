@@ -24,6 +24,69 @@ services:
       - 'RABBITMQ_DEFAULT_USER=tessle'
     ports:
       - '5672'
+  # Tenant test databases (ticket #12): `docker compose --profile tenant-dbs up`. Not started by default; the
+  # ignore label keeps Spring Boot from wiring them as the platform datasource. Same sample schema in all four.
+  tenant-postgres:
+    profiles: [tenant-dbs]
+    image: 'postgres:18'
+    labels: ['org.springframework.boot.ignore=true']
+    environment:
+      - 'POSTGRES_DB=tenant'
+      - 'POSTGRES_USER=tenant'
+      - 'POSTGRES_PASSWORD=tenant'
+    ports: ['55432:5432']
+    volumes:
+      - ./tenant-dbs/postgresql.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+  tenant-mysql:
+    profiles: [tenant-dbs]
+    image: 'mysql:9'
+    labels: ['org.springframework.boot.ignore=true']
+    environment:
+      - 'MYSQL_DATABASE=tenant'
+      - 'MYSQL_USER=tenant'
+      - 'MYSQL_PASSWORD=tenant'
+      - 'MYSQL_ROOT_PASSWORD=tenant'
+    ports: ['53306:3306']
+    volumes:
+      - ./tenant-dbs/mysql.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+  tenant-oracle:
+    profiles: [tenant-dbs]
+    image: 'gvenzl/oracle-free:23-slim-faststart'
+    labels: ['org.springframework.boot.ignore=true']
+    environment:
+      - 'ORACLE_PASSWORD=tenant'
+      - 'APP_USER=tenant'
+      - 'APP_USER_PASSWORD=tenant'
+    ports: ['51521:1521']
+    volumes:
+      - ./tenant-dbs/oracle.sql:/seed/oracle.sql:ro
+      - ./tenant-dbs/oracle-compose-init.sh:/container-entrypoint-initdb.d/seed.sh:ro
+  tenant-sqlserver:
+    profiles: [tenant-dbs]
+    image: 'mcr.microsoft.com/mssql/server:2022-latest'
+    labels: ['org.springframework.boot.ignore=true']
+    environment:
+      # Starting this service accepts the SQL Server end-user licence agreement.
+      - 'ACCEPT_EULA=Y'
+      - 'MSSQL_SA_PASSWORD=Tenant_pw1!'
+    ports: ['51433:1433']
+    healthcheck:
+      test: ['CMD-SHELL', '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1" || exit 1']
+      interval: 5s
+      retries: 30
+  # SQL Server has no init directory, so a one-shot job loads the seed once the server is healthy.
+  tenant-sqlserver-seed:
+    profiles: [tenant-dbs]
+    image: 'mcr.microsoft.com/mssql/server:2022-latest'
+    labels: ['org.springframework.boot.ignore=true']
+    depends_on:
+      tenant-sqlserver: {condition: service_healthy}
+    restart: 'no'
+    environment:
+      - 'MSSQL_SA_PASSWORD=Tenant_pw1!'
+    volumes:
+      - ./tenant-dbs/sqlserver.sql:/seed.sql:ro
+    entrypoint: ['/bin/bash', '-c', '/opt/mssql-tools18/bin/sqlcmd -C -b -S tenant-sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -i /seed.sql']
 volumes:
   postgres-data:
   redis-data:
