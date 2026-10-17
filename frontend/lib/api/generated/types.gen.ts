@@ -77,6 +77,9 @@ export type Health = {
     lastTestOk?: boolean;
     lastTestAt?: string;
     lastTestError?: string;
+    pingOk?: boolean;
+    pingAt?: string;
+    pingError?: string;
 };
 
 export type TestResponse = {
@@ -421,6 +424,41 @@ export type EnableDataSourceResponses = {
 
 export type EnableDataSourceResponse = EnableDataSourceResponses[keyof EnableDataSourceResponses];
 
+export type DisableDataSourceData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/data-sources/{id}/disable';
+};
+
+export type DisableDataSourceErrors = {
+    /**
+     * The caller's role cannot manage Data sources
+     */
+    403: DataSourceResponse;
+    /**
+     * No such Data source in this workspace
+     */
+    404: DataSourceResponse;
+    /**
+     * Someone else changed the Data source since it was read
+     */
+    409: DataSourceResponse;
+};
+
+export type DisableDataSourceError = DisableDataSourceErrors[keyof DisableDataSourceErrors];
+
+export type DisableDataSourceResponses = {
+    /**
+     * Disabled (also when it already was)
+     */
+    200: DataSourceResponse;
+};
+
+export type DisableDataSourceResponse = DisableDataSourceResponses[keyof DisableDataSourceResponses];
+
 export type RefreshSessionData = {
     body?: never;
     path?: never;
@@ -671,6 +709,39 @@ export type ChangeMemberRoleResponses = {
 };
 
 export type ChangeMemberRoleResponse = ChangeMemberRoleResponses[keyof ChangeMemberRoleResponses];
+
+export type DeleteDataSourceData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/data-sources/{id}';
+};
+
+export type DeleteDataSourceErrors = {
+    /**
+     * The caller's role cannot manage Data sources
+     */
+    403: unknown;
+    /**
+     * No such Data source in this workspace
+     */
+    404: unknown;
+    /**
+     * Something still uses this Data source
+     */
+    409: unknown;
+};
+
+export type DeleteDataSourceResponses = {
+    /**
+     * Deleted
+     */
+    204: void;
+};
+
+export type DeleteDataSourceResponse = DeleteDataSourceResponses[keyof DeleteDataSourceResponses];
 
 export type UpdateDataSourceData = {
     body: UpdateDataSource;

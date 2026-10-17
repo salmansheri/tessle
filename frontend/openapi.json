@@ -434,6 +434,64 @@
         }
       }
     },
+    "/api/data-sources/{id}/disable" : {
+      "post" : {
+        "tags" : [ "data-sources-controller" ],
+        "summary" : "Switch a Data source off; enabling it again needs a new passing test (admins and owners)",
+        "operationId" : "disableDataSource",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Disabled (also when it already was)",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller's role cannot manage Data sources",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No such Data source in this workspace",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Someone else changed the Data source since it was read",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataSourceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/refresh" : {
       "post" : {
         "tags" : [ "auth-controller" ],
@@ -730,6 +788,34 @@
       }
     },
     "/api/data-sources/{id}" : {
+      "delete" : {
+        "tags" : [ "data-sources-controller" ],
+        "summary" : "Delete a Data source nothing uses (admins and owners)",
+        "operationId" : "deleteDataSource",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Deleted"
+          },
+          "403" : {
+            "description" : "The caller's role cannot manage Data sources"
+          },
+          "404" : {
+            "description" : "No such Data source in this workspace"
+          },
+          "409" : {
+            "description" : "Something still uses this Data source"
+          }
+        }
+      },
       "patch" : {
         "tags" : [ "data-sources-controller" ],
         "summary" : "Edit a Data source; omitted fields stay as they are (admins and owners)",
@@ -1162,6 +1248,16 @@
             "format" : "date-time"
           },
           "lastTestError" : {
+            "type" : "string"
+          },
+          "pingOk" : {
+            "type" : "boolean"
+          },
+          "pingAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "pingError" : {
             "type" : "string"
           }
         }

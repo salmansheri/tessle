@@ -1,6 +1,7 @@
 package dev.salman.Lowcodebackend.datasource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -41,6 +42,9 @@ class DataSourcesApiTests {
 
 	@Autowired
 	TestSessions sessions;
+
+	@Autowired
+	HealthMonitor monitor;
 
 	@Autowired
 	JdbcTemplate admin;
@@ -303,6 +307,113 @@ class DataSourcesApiTests {
 		assertThat(events).hasSize(2);
 		assertThat((String) events.get(0).get("d")).contains("label");
 		assertThat((String) events.get(1).get("d")).contains("password").doesNotContain(SECRET);
+	}
+
+
+	UUID enabledSource(Cookie access, String logicalName, String password) throws Exception {
+		UUID id = create(access, logicalName, password, "tenant", null);
+		test(access, id);
+		assertThat(send(post("/api/data-sources/" + id + "/enable"), access, null).getResponse().getStatus()).isEqualTo(200);
+		return id;
+	}
+
+	JsonNode listed(Cookie access, UUID id) throws Exception {
+		for (JsonNode n : body(mvc.perform(get("/api/data-sources").cookie(access)).andReturn())) {
+			if (n.get("id").asString().equals(id.toString())) {
+				return n;
+			}
+		}
+		throw new AssertionError("not listed: " + id);
+	}
+
+	@Test
+	void disablingAnEnabledSourceNeedsAFreshTestBeforeItCanBeEnabledAgain() throws Exception {
+		Owner ada = ownerOfNewWorkspace("ada@example.com", "Acme");
+		Cookie builder = memberWithRole(ada.workspaceId(), "builder@example.com", "builder");
+		UUID id = enabledSource(ada.access(), "sales", TenantDatabases.postgres().password());
+
+		assertThat(send(post("/api/data-sources/" + id + "/disable"), builder, null).getResponse().getStatus()).isEqualTo(403);
+		MvcResult disabled = send(post("/api/data-sources/" + id + "/disable"), ada.access(), null);
+		assertThat(disabled.getResponse().getStatus()).isEqualTo(200);
+		assertThat(body(disabled).get("state").asString()).isEqualTo("disabled");
+		assertThat(admin.queryForObject("select count(*) from audit_events where action = 'datasource.disabled'", Integer.class)).isEqualTo(1);
+
+		// The earlier passing test no longer counts.
+		assertThat(send(post("/api/data-sources/" + id + "/enable"), ada.access(), null).getResponse().getStatus()).isEqualTo(409);
+		test(ada.access(), id);
+		assertThat(send(post("/api/data-sources/" + id + "/enable"), ada.access(), null).getResponse().getStatus()).isEqualTo(200);
+
+		assertThat(send(post("/api/data-sources/" + UUID.randomUUID() + "/disable"), ada.access(), null).getResponse().getStatus()).isEqualTo(404);
+	}
+
+	@Test
+	void aDataSourceNothingReferencesCanBeDeletedAndOneThatIsReferencedCannot() throws Exception {
+		Owner ada = ownerOfNewWorkspace("ada@example.com", "Acme");
+		Cookie builder = memberWithRole(ada.workspaceId(), "builder@example.com", "builder");
+		UUID free = enabledSource(ada.access(), "free", TenantDatabases.postgres().password());
+		UUID used = create(ada.access(), "used", TenantDatabases.postgres().password(), "tenant", null);
+		// Later features reference a Data source with a foreign key; the database refuses to orphan them.
+		admin.execute("create table ds_reference_probe (data_source_id uuid not null references data_sources (id))");
+		try {
+			admin.update("insert into ds_reference_probe values (?)", used);
+
+			assertThat(send(delete("/api/data-sources/" + free), builder, null).getResponse().getStatus()).isEqualTo(403);
+			assertThat(send(delete("/api/data-sources/" + used), ada.access(), null).getResponse().getStatus()).isEqualTo(409);
+			assertThat(listed(ada.access(), used)).isNotNull();
+
+			assertThat(send(delete("/api/data-sources/" + free), ada.access(), null).getResponse().getStatus()).isEqualTo(204);
+			assertThat(body(mvc.perform(get("/api/data-sources").cookie(ada.access())).andReturn())).hasSize(1);
+			assertThat(admin.queryForObject("select count(*) from audit_events where action = 'datasource.deleted'", Integer.class)).isEqualTo(1);
+			assertThat(admin.queryForObject("select count(*) from audit_events where action = 'datasource.deleted' and detail::text like '%free%'", Integer.class)).isEqualTo(1);
+			assertThat(send(delete("/api/data-sources/" + free), ada.access(), null).getResponse().getStatus()).isEqualTo(404);
+		}
+		finally {
+			admin.execute("drop table ds_reference_probe");
+		}
+	}
+
+	@Test
+	void thePingRecordsHealthOfEnabledSourcesAndNeverDisablesAFailingOne() throws Exception {
+		Owner ada = ownerOfNewWorkspace("ada@example.com", "Acme");
+		Cookie builder = memberWithRole(ada.workspaceId(), "builder@example.com", "builder");
+		UUID healthy = enabledSource(ada.access(), "healthy", TenantDatabases.postgres().password());
+		UUID failing = enabledSource(ada.access(), "failing", TenantDatabases.postgres().password());
+		UUID off = create(ada.access(), "off", TenantDatabases.postgres().password(), "tenant", null);
+
+		// Enabling follows a passing test, so a source starts out healthy.
+		assertThat(listed(builder, healthy).get("health").get("pingOk").asBoolean()).isTrue();
+
+		// The database goes away behind the platform's back (changed directly, as an outage would).
+		admin.update("update data_sources set ping_ok = null, ping_at = null, ping_error = null");
+		admin.update("update data_sources set database_name = 'gone' where id = ?", failing);
+		monitor.pingAll();
+		JsonNode bad = listed(builder, failing);
+		assertThat(bad.get("health").get("pingOk").asBoolean()).isFalse();
+		assertThat(bad.get("health").get("pingError").asString()).isNotBlank();
+		assertThat(bad.get("health").get("pingAt").isNull()).isFalse();
+		assertThat(bad.get("state").asString()).isEqualTo("enabled"); // a failing source is not auto-disabled
+		assertThat(listed(builder, healthy).get("health").get("pingOk").asBoolean()).isTrue();
+
+		admin.update("update data_sources set database_name = 'tenant' where id = ?", failing);
+		// Back to normal: the next ping reports healthy again. Disabled sources are never pinged.
+		monitor.pingAll();
+		assertThat(listed(builder, failing).get("health").get("pingOk").asBoolean()).isTrue();
+		assertThat(listed(builder, off).get("health").get("pingAt").isNull()).isTrue();
+	}
+
+	@Test
+	void aPingDoesNotMoveUpdatedAtAndDisablingClearsHealth() throws Exception {
+		Owner ada = ownerOfNewWorkspace("ada@example.com", "Acme");
+		UUID id = enabledSource(ada.access(), "sales", TenantDatabases.postgres().password());
+		assertThat(listed(ada.access(), id).get("health").get("pingAt").isNull()).isFalse();
+
+		// A ping does not move updated_at, so an admin editing a form is not made to reload every five minutes.
+		var before = admin.queryForObject("select updated_at from data_sources where id = ?", java.sql.Timestamp.class, id);
+		monitor.pingAll();
+		assertThat(admin.queryForObject("select updated_at from data_sources where id = ?", java.sql.Timestamp.class, id)).isEqualTo(before);
+
+		send(post("/api/data-sources/" + id + "/disable"), ada.access(), null);
+		assertThat(listed(ada.access(), id).get("health").get("pingAt").isNull()).isTrue();
 	}
 
 }

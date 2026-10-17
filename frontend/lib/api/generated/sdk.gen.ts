@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcceptInvitationData, AcceptInvitationErrors, AcceptInvitationResponses, ActivateWorkspaceData, ActivateWorkspaceErrors, ActivateWorkspaceResponses, ChangeMemberRoleData, ChangeMemberRoleErrors, ChangeMemberRoleResponses, CreateAppData, CreateAppErrors, CreateAppResponses, CreateDataSourceData, CreateDataSourceErrors, CreateDataSourceResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, EnableDataSourceData, EnableDataSourceErrors, EnableDataSourceResponses, GetCsrfData, GetCsrfResponses, GetHealthData, GetHealthResponses, GetMeData, GetMeErrors, GetMeResponses, InviteMemberData, InviteMemberErrors, InviteMemberResponses, ListAppsData, ListAppsErrors, ListAppsResponses, ListDataSourcesData, ListDataSourcesErrors, ListDataSourcesResponses, ListInvitationsData, ListInvitationsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListWorkspacesData, ListWorkspacesResponses, LogoutData, LogoutErrors, LogoutEverywhereData, LogoutEverywhereErrors, LogoutEverywhereResponses, LogoutResponses, RefreshSessionData, RefreshSessionErrors, RefreshSessionResponses, RemoveMemberData, RemoveMemberErrors, RemoveMemberResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, TestDataSourceData, TestDataSourceErrors, TestDataSourceResponses, UpdateDataSourceData, UpdateDataSourceErrors, UpdateDataSourceResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
+import type { AcceptInvitationData, AcceptInvitationErrors, AcceptInvitationResponses, ActivateWorkspaceData, ActivateWorkspaceErrors, ActivateWorkspaceResponses, ChangeMemberRoleData, ChangeMemberRoleErrors, ChangeMemberRoleResponses, CreateAppData, CreateAppErrors, CreateAppResponses, CreateDataSourceData, CreateDataSourceErrors, CreateDataSourceResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, DeleteDataSourceData, DeleteDataSourceErrors, DeleteDataSourceResponses, DisableDataSourceData, DisableDataSourceErrors, DisableDataSourceResponses, EnableDataSourceData, EnableDataSourceErrors, EnableDataSourceResponses, GetCsrfData, GetCsrfResponses, GetHealthData, GetHealthResponses, GetMeData, GetMeErrors, GetMeResponses, InviteMemberData, InviteMemberErrors, InviteMemberResponses, ListAppsData, ListAppsErrors, ListAppsResponses, ListDataSourcesData, ListDataSourcesErrors, ListDataSourcesResponses, ListInvitationsData, ListInvitationsResponses, ListMembersData, ListMembersErrors, ListMembersResponses, ListWorkspacesData, ListWorkspacesResponses, LogoutData, LogoutErrors, LogoutEverywhereData, LogoutEverywhereErrors, LogoutEverywhereResponses, LogoutResponses, RefreshSessionData, RefreshSessionErrors, RefreshSessionResponses, RemoveMemberData, RemoveMemberErrors, RemoveMemberResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, TestDataSourceData, TestDataSourceErrors, TestDataSourceResponses, UpdateDataSourceData, UpdateDataSourceErrors, UpdateDataSourceResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -97,6 +97,11 @@ export const testDataSource = <ThrowOnError extends boolean = false>(options: Op
 export const enableDataSource = <ThrowOnError extends boolean = false>(options: Options<EnableDataSourceData, ThrowOnError>): RequestResult<EnableDataSourceResponses, EnableDataSourceErrors, ThrowOnError> => (options.client ?? client).post<EnableDataSourceResponses, EnableDataSourceErrors, ThrowOnError>({ url: '/api/data-sources/{id}/enable', ...options });
 
 /**
+ * Switch a Data source off; enabling it again needs a new passing test (admins and owners)
+ */
+export const disableDataSource = <ThrowOnError extends boolean = false>(options: Options<DisableDataSourceData, ThrowOnError>): RequestResult<DisableDataSourceResponses, DisableDataSourceErrors, ThrowOnError> => (options.client ?? client).post<DisableDataSourceResponses, DisableDataSourceErrors, ThrowOnError>({ url: '/api/data-sources/{id}/disable', ...options });
+
+/**
  * Rotate the refresh token and renew the session cookies
  */
 export const refreshSession = <ThrowOnError extends boolean = false>(options?: Options<RefreshSessionData, ThrowOnError>): RequestResult<RefreshSessionResponses, RefreshSessionErrors, ThrowOnError> => (options?.client ?? client).post<RefreshSessionResponses, RefreshSessionErrors, ThrowOnError>({ url: '/api/auth/refresh', ...options });
@@ -168,6 +173,11 @@ export const changeMemberRole = <ThrowOnError extends boolean = false>(options: 
         ...options.headers
     }
 });
+
+/**
+ * Delete a Data source nothing uses (admins and owners)
+ */
+export const deleteDataSource = <ThrowOnError extends boolean = false>(options: Options<DeleteDataSourceData, ThrowOnError>): RequestResult<DeleteDataSourceResponses, DeleteDataSourceErrors, ThrowOnError> => (options.client ?? client).delete<DeleteDataSourceResponses, DeleteDataSourceErrors, ThrowOnError>({ url: '/api/data-sources/{id}', ...options });
 
 /**
  * Edit a Data source; omitted fields stay as they are (admins and owners)

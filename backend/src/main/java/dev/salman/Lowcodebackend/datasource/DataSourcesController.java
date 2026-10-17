@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -64,7 +65,8 @@ class DataSourcesController {
 			@Schema(description = "PEM certificate to trust; an empty string removes it") @Size(max = 65536) String caCertificate) {
 	}
 
-	record Health(Boolean lastTestOk, Instant lastTestAt, String lastTestError) {
+	/** lastTest* is the admin's connection test; ping* is the background check made every few minutes while enabled. */
+	record Health(Boolean lastTestOk, Instant lastTestAt, String lastTestError, Boolean pingOk, Instant pingAt, String pingError) {
 	}
 
 	/** Connection details are null for builders, who may list Data sources but not see how they are reached. */
@@ -82,7 +84,7 @@ class DataSourcesController {
 		static DataSourceResponse of(DataSourceService.View v) {
 			DataSourceRecord r = v.record();
 			return new DataSourceResponse(r.id(), r.logicalName(), r.label(), r.type(), r.state(),
-					new Health(r.lastTestOk(), r.lastTestAt(), r.lastTestError()), r.createdAt(),
+					new Health(r.lastTestOk(), r.lastTestAt(), r.lastTestError(), r.pingOk(), r.pingAt(), r.pingError()), r.createdAt(),
 					v.details() ? r.host() : null, v.details() ? r.port() : null, v.details() ? r.database() : null,
 					v.details() ? r.username() : null, v.details() ? r.tlsVerify() : null, v.details() ? r.caCiphertext() != null : null);
 		}
@@ -143,6 +145,27 @@ class DataSourcesController {
 	@PostMapping("/{id}/enable")
 	DataSourceResponse enable(@PathVariable UUID id, @Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt) {
 		return DataSourceResponse.of(sources.enable(ActiveWorkspace.user(jwt), ActiveWorkspace.of(jwt), id));
+	}
+
+	@Operation(operationId = "disableDataSource", summary = "Switch a Data source off; enabling it again needs a new passing test (admins and owners)")
+	@ApiResponse(responseCode = "200", description = "Disabled (also when it already was)")
+	@ApiResponse(responseCode = "403", description = "The caller's role cannot manage Data sources")
+	@ApiResponse(responseCode = "404", description = "No such Data source in this workspace")
+	@ApiResponse(responseCode = "409", description = "Someone else changed the Data source since it was read")
+	@PostMapping("/{id}/disable")
+	DataSourceResponse disable(@PathVariable UUID id, @Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt) {
+		return DataSourceResponse.of(sources.disable(ActiveWorkspace.user(jwt), ActiveWorkspace.of(jwt), id));
+	}
+
+	@Operation(operationId = "deleteDataSource", summary = "Delete a Data source nothing uses (admins and owners)")
+	@ApiResponse(responseCode = "204", description = "Deleted")
+	@ApiResponse(responseCode = "403", description = "The caller's role cannot manage Data sources")
+	@ApiResponse(responseCode = "404", description = "No such Data source in this workspace")
+	@ApiResponse(responseCode = "409", description = "Something still uses this Data source")
+	@DeleteMapping("/{id}")
+	ResponseEntity<Void> delete(@PathVariable UUID id, @Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt) {
+		sources.delete(ActiveWorkspace.user(jwt), ActiveWorkspace.of(jwt), id);
+		return ResponseEntity.noContent().build();
 	}
 
 	@Operation(operationId = "updateDataSource", summary = "Edit a Data source; omitted fields stay as they are (admins and owners)")

@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import dev.salman.Lowcodebackend.workspace.MembershipRoles;
 import dev.salman.Lowcodebackend.workspace.Role;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -54,7 +55,7 @@ class DataSourceService {
 		DataSourceRecord created = store.create(user, new DataSourceRecord(id, workspace, n.logicalName(), n.label().trim(),
 				n.type(), n.host(), n.port(), n.database(), n.username(), password.ciphertext(), password.keyId(),
 				n.verifyCertificate() == null || n.verifyCertificate(), ca == null ? null : ca.ciphertext(),
-				ca == null ? null : ca.keyId(), "disabled", null, null, null, null, null));
+				ca == null ? null : ca.keyId(), "disabled", null, null, null, null, null, null, null, null));
 		return new View(created, true);
 	}
 
@@ -103,7 +104,7 @@ class DataSourceService {
 			return new View(ds, true);
 		}
 		DataSourceRecord next = new DataSourceRecord(id, workspace, ds.logicalName(), label, ds.type(), host, port, database,
-				username, ciphertext, keyId, tlsVerify, caCiphertext, caKeyId, ds.state(), ds.lastTestOk(), ds.lastTestAt(), ds.lastTestError(), ds.createdAt(), ds.updatedAt());
+				username, ciphertext, keyId, tlsVerify, caCiphertext, caKeyId, ds.state(), ds.lastTestOk(), ds.lastTestAt(), ds.lastTestError(), ds.pingOk(), ds.pingAt(), ds.pingError(), ds.createdAt(), ds.updatedAt());
 		return new View(store.update(user, next, connection, changed, ds.tlsVerify() && !tlsVerify).orElseThrow(DataSourceService::changedMeanwhile), true);
 	}
 
@@ -124,14 +125,20 @@ class DataSourceService {
 	ConnectionTester.Result test(UUID user, UUID workspace, UUID id) {
 		roles.require(user, workspace, Role.admin);
 		DataSourceRecord ds = store.find(workspace, id).orElseThrow(DataSourceService::notFound);
-		String password = secrets.open(ds.passwordCiphertext(), ds.secretKeyId(), context(workspace, id));
-		String ca = ds.caCiphertext() == null ? null : secrets.open(ds.caCiphertext(), ds.caKeyId(), caContext(workspace, id));
-		ConnectionTester.Result result = tester.test(new ConnectionTester.Target(ds.type(), ds.host(), ds.port(), ds.database(),
-				ds.username(), password, ds.tlsVerify(), ca));
+		ConnectionTester.Result result = probe(ds);
 		if (!store.recordTest(workspace, user, id, ds.updatedAt(), result.ok(), result.error(), result.message())) {
 			throw changedMeanwhile();
 		}
 		return result;
+	}
+
+	/** Dials the Data source with its stored settings, whoever asks (an admin's test or the background ping). */
+	ConnectionTester.Result probe(DataSourceRecord ds) {
+		UUID workspace = ds.workspaceId();
+		String password = secrets.open(ds.passwordCiphertext(), ds.secretKeyId(), context(workspace, ds.id()));
+		String ca = ds.caCiphertext() == null ? null : secrets.open(ds.caCiphertext(), ds.caKeyId(), caContext(workspace, ds.id()));
+		return tester.test(new ConnectionTester.Target(ds.type(), ds.host(), ds.port(), ds.database(),
+				ds.username(), password, ds.tlsVerify(), ca));
 	}
 
 	View enable(UUID user, UUID workspace, UUID id) {
@@ -148,6 +155,29 @@ class DataSourceService {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "A connection test must pass before enabling");
 		}
 		return new View(store.find(workspace, ds.id()).orElseThrow(), true);
+	}
+
+	/** Idempotent: disabling a source that is already off changes nothing. */
+	View disable(UUID user, UUID workspace, UUID id) {
+		roles.require(user, workspace, Role.admin);
+		DataSourceRecord ds = store.find(workspace, id).orElseThrow(DataSourceService::notFound);
+		if (ds.enabled() && !store.disable(workspace, user, id, ds.updatedAt())) {
+			throw changedMeanwhile();
+		}
+		return new View(store.find(workspace, id).orElseThrow(DataSourceService::notFound), true);
+	}
+
+	void delete(UUID user, UUID workspace, UUID id) {
+		roles.require(user, workspace, Role.admin);
+		DataSourceRecord ds = store.find(workspace, id).orElseThrow(DataSourceService::notFound);
+		try {
+			if (!store.delete(workspace, user, id, ds.logicalName())) {
+				throw notFound();
+			}
+		}
+		catch (DataIntegrityViolationException inUse) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Something still uses this Data source; remove those first");
+		}
 	}
 
 	private static ResponseStatusException changedMeanwhile() {

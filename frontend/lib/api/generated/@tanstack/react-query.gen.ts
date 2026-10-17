@@ -3,8 +3,8 @@
 import { type DefaultError, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { acceptInvitation, activateWorkspace, changeMemberRole, createApp, createDataSource, createWorkspace, enableDataSource, getCsrf, getHealth, getMe, inviteMember, listApps, listDataSources, listInvitations, listMembers, listWorkspaces, logout, logoutEverywhere, type Options, refreshSession, removeMember, requestOtp, revokeInvitation, testDataSource, updateDataSource, verifyOtp } from '../sdk.gen';
-import type { AcceptInvitationData, AcceptInvitationError, AcceptInvitationResponse, ActivateWorkspaceData, ActivateWorkspaceResponse, ChangeMemberRoleData, ChangeMemberRoleResponse, CreateAppData, CreateAppError, CreateAppResponse, CreateDataSourceData, CreateDataSourceError, CreateDataSourceResponse, CreateWorkspaceData, CreateWorkspaceError, CreateWorkspaceResponse, EnableDataSourceData, EnableDataSourceError, EnableDataSourceResponse, GetCsrfData, GetCsrfResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeError, GetMeResponse, InviteMemberData, InviteMemberError, InviteMemberResponse, ListAppsData, ListAppsError, ListAppsResponse, ListDataSourcesData, ListDataSourcesError, ListDataSourcesResponse, ListInvitationsData, ListInvitationsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListWorkspacesData, ListWorkspacesResponse, LogoutData, LogoutEverywhereData, LogoutEverywhereResponse, LogoutResponse, RefreshSessionData, RefreshSessionResponse, RemoveMemberData, RemoveMemberResponse, RequestOtpData, RevokeInvitationData, RevokeInvitationResponse, TestDataSourceData, TestDataSourceError, TestDataSourceResponse, UpdateDataSourceData, UpdateDataSourceError, UpdateDataSourceResponse, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
+import { acceptInvitation, activateWorkspace, changeMemberRole, createApp, createDataSource, createWorkspace, deleteDataSource, disableDataSource, enableDataSource, getCsrf, getHealth, getMe, inviteMember, listApps, listDataSources, listInvitations, listMembers, listWorkspaces, logout, logoutEverywhere, type Options, refreshSession, removeMember, requestOtp, revokeInvitation, testDataSource, updateDataSource, verifyOtp } from '../sdk.gen';
+import type { AcceptInvitationData, AcceptInvitationError, AcceptInvitationResponse, ActivateWorkspaceData, ActivateWorkspaceResponse, ChangeMemberRoleData, ChangeMemberRoleResponse, CreateAppData, CreateAppError, CreateAppResponse, CreateDataSourceData, CreateDataSourceError, CreateDataSourceResponse, CreateWorkspaceData, CreateWorkspaceError, CreateWorkspaceResponse, DeleteDataSourceData, DeleteDataSourceResponse, DisableDataSourceData, DisableDataSourceError, DisableDataSourceResponse, EnableDataSourceData, EnableDataSourceError, EnableDataSourceResponse, GetCsrfData, GetCsrfResponse, GetHealthData, GetHealthResponse, GetMeData, GetMeError, GetMeResponse, InviteMemberData, InviteMemberError, InviteMemberResponse, ListAppsData, ListAppsError, ListAppsResponse, ListDataSourcesData, ListDataSourcesError, ListDataSourcesResponse, ListInvitationsData, ListInvitationsResponse, ListMembersData, ListMembersError, ListMembersResponse, ListWorkspacesData, ListWorkspacesResponse, LogoutData, LogoutEverywhereData, LogoutEverywhereResponse, LogoutResponse, RefreshSessionData, RefreshSessionResponse, RemoveMemberData, RemoveMemberResponse, RequestOtpData, RevokeInvitationData, RevokeInvitationResponse, TestDataSourceData, TestDataSourceError, TestDataSourceResponse, UpdateDataSourceData, UpdateDataSourceError, UpdateDataSourceResponse, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -213,6 +213,23 @@ export const enableDataSourceMutation = (options?: Partial<Options<EnableDataSou
 };
 
 /**
+ * Switch a Data source off; enabling it again needs a new passing test (admins and owners)
+ */
+export const disableDataSourceMutation = (options?: Partial<Options<DisableDataSourceData>>): UseMutationOptions<DisableDataSourceResponse, DisableDataSourceError, Options<DisableDataSourceData>> => {
+    const mutationOptions: UseMutationOptions<DisableDataSourceResponse, DisableDataSourceError, Options<DisableDataSourceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await disableDataSource({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
  * Rotate the refresh token and renew the session cookies
  */
 export const refreshSessionMutation = (options?: Partial<Options<RefreshSessionData>>): UseMutationOptions<RefreshSessionResponse, DefaultError, Options<RefreshSessionData>> => {
@@ -356,6 +373,23 @@ export const changeMemberRoleMutation = (options?: Partial<Options<ChangeMemberR
     const mutationOptions: UseMutationOptions<ChangeMemberRoleResponse, DefaultError, Options<ChangeMemberRoleData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await changeMemberRole({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Delete a Data source nothing uses (admins and owners)
+ */
+export const deleteDataSourceMutation = (options?: Partial<Options<DeleteDataSourceData>>): UseMutationOptions<DeleteDataSourceResponse, DefaultError, Options<DeleteDataSourceData>> => {
+    const mutationOptions: UseMutationOptions<DeleteDataSourceResponse, DefaultError, Options<DeleteDataSourceData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteDataSource({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

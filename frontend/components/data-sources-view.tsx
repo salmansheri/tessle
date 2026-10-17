@@ -1,13 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleAlert, CircleCheck, CircleDashed, Pencil, Plus, PlugZap, ShieldAlert } from "lucide-react";
+import { CircleAlert, CircleCheck, CircleDashed, Pencil, Plus, PlugZap, Power, ShieldAlert, Trash2 } from "lucide-react";
 import { useId, useState } from "react";
 import { RoleNote } from "@/components/role-note";
 import { ensureCsrf } from "@/lib/api/csrf";
 import { ApiStatusError, unwrap } from "@/lib/api/errors";
 import { listDataSourcesQueryKey } from "@/lib/api/generated/@tanstack/react-query.gen";
-import { createDataSource, enableDataSource, listDataSources, testDataSource, updateDataSource } from "@/lib/api/generated/sdk.gen";
+import { createDataSource, deleteDataSource, disableDataSource, enableDataSource, listDataSources, testDataSource, updateDataSource } from "@/lib/api/generated/sdk.gen";
 import type { DataSourceResponse, TestResponse } from "@/lib/api/generated/types.gen";
 import { withRenewal } from "@/lib/api/session";
 import { type RoleName, useWorkspace } from "@/lib/api/use-workspace";
@@ -17,8 +17,8 @@ const MANAGERS: RoleName[] = ["owner", "admin"];
 const BUILDERS: RoleName[] = ["owner", "admin", "builder"];
 
 const ROLE_TEXT: Record<RoleName, string> = {
-  owner: "You can add, test, enable and change Data sources.",
-  admin: "You can add, test, enable and change Data sources.",
+  owner: "You can add, test, enable, disable, change and delete Data sources.",
+  admin: "You can add, test, enable, disable, change and delete Data sources.",
   builder: "You can see which Data sources exist. Connection details and changes are for owners and admins.",
   editor: "Data sources are for builders and above.",
   viewer: "Data sources are for builders and above.",
@@ -26,7 +26,7 @@ const ROLE_TEXT: Record<RoleName, string> = {
 
 const TYPE_LABEL: Record<string, string> = { postgresql: "PostgreSQL", mysql: "MySQL", oracle: "Oracle", sqlserver: "SQL Server" };
 
-type Action = "save" | "test" | "enable";
+type Action = "save" | "test" | "enable" | "disable" | "delete";
 
 function failure(error: unknown, action: Action, fallback: string): string {
   if (error instanceof ApiStatusError) {
@@ -34,6 +34,8 @@ function failure(error: unknown, action: Action, fallback: string): string {
     if (error.status === 404) return "That Data source no longer exists.";
     if (error.status === 409) {
       if (action === "enable") return "Run a passing connection test first. Changing how it connects clears the earlier test.";
+      if (action === "disable") return "Someone changed this Data source while you were looking at it. Reload and try again.";
+      if (action === "delete") return "Something still uses this Data source. Remove those first, or disable it instead.";
       if (action === "test") return "Someone changed this Data source while it was being tested. Reload and test again.";
       return "That logical name is already used in this workspace, or someone else changed this Data source. Reload and try again.";
     }
@@ -43,18 +45,28 @@ function failure(error: unknown, action: Action, fallback: string): string {
 }
 
 function Health({ ds }: { ds: DataSourceResponse }) {
-  const { lastTestOk, lastTestAt, lastTestError } = ds.health;
+  const { lastTestOk, lastTestAt, lastTestError, pingOk, pingAt, pingError } = ds.health;
+  const since = (at: string | null | undefined) =>
+    at ? <time dateTime={at} title={formatAbsolute(at)} className="font-normal text-ink-2">{formatRelative(at)}</time> : null;
+  // While enabled the background ping is the live answer; otherwise only the last manual test exists.
+  if (ds.state === "enabled" && pingOk !== undefined && pingOk !== null) {
+    return pingOk ? (
+      <span className="inline-flex flex-wrap items-center gap-2"><span className="pill pill-ok"><CircleCheck aria-hidden className="size-3.5" />Healthy</span>{since(pingAt)}</span>
+    ) : (
+      <span className="inline-flex flex-wrap items-center gap-2" title={pingError ?? undefined}>
+        <span className="pill pill-bad"><CircleAlert aria-hidden className="size-3.5" />Failing</span>{since(pingAt)}
+        {pingError && <span className="w-full font-normal text-ink-2">{pingError}</span>}
+      </span>
+    );
+  }
   if (lastTestOk === undefined || lastTestOk === null) {
     return <span className="pill"><CircleDashed aria-hidden className="size-3.5" />Not tested</span>;
   }
-  const when = lastTestAt ? (
-    <time dateTime={lastTestAt} title={formatAbsolute(lastTestAt)} className="font-normal text-ink-2">{formatRelative(lastTestAt)}</time>
-  ) : null;
   return lastTestOk ? (
-    <span className="inline-flex flex-wrap items-center gap-2"><span className="pill pill-ok"><CircleCheck aria-hidden className="size-3.5" />Test passed</span>{when}</span>
+    <span className="inline-flex flex-wrap items-center gap-2"><span className="pill pill-ok"><CircleCheck aria-hidden className="size-3.5" />Test passed</span>{since(lastTestAt)}</span>
   ) : (
     <span className="inline-flex flex-wrap items-center gap-2" title={lastTestError ?? undefined}>
-      <span className="pill pill-bad"><CircleAlert aria-hidden className="size-3.5" />Test failed</span>{when}
+      <span className="pill pill-bad"><CircleAlert aria-hidden className="size-3.5" />Test failed</span>{since(lastTestAt)}
     </span>
   );
 }
@@ -211,6 +223,7 @@ export function DataSourcesView() {
   const [outcome, setOutcome] = useState<{ id: string; result: TestResponse } | null>(null);
   const [actionError, setActionError] = useState<unknown>(null);
   const [actionKind, setActionKind] = useState<Action>("test");
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const formId = useId();
 
   const canSee = !!role && BUILDERS.includes(role);
@@ -249,6 +262,34 @@ export function DataSourcesView() {
     },
     onError: setActionError,
     onSettled: reload,
+  });
+
+  const disable = useMutation({
+    onMutate: () => {
+      setActionError(null);
+      setActionKind("disable");
+    },
+    mutationFn: async (id: string) => {
+      await ensureCsrf();
+      await unwrap(withRenewal(() => disableDataSource({ path: { id } })));
+    },
+    onError: setActionError,
+    onSettled: reload,
+  });
+  const remove = useMutation({
+    onMutate: () => {
+      setActionError(null);
+      setActionKind("delete");
+    },
+    mutationFn: async (id: string) => {
+      await ensureCsrf();
+      await unwrap(withRenewal(() => deleteDataSource({ path: { id } })));
+    },
+    onError: setActionError,
+    onSettled: () => {
+      setConfirmDelete(null);
+      return reload();
+    },
   });
 
   if (isPending) return <p role="status" className="text-ink-2">Loading…</p>;
@@ -341,6 +382,12 @@ export function DataSourcesView() {
                                   Enable<span className="sr-only"> {ds.label}</span>
                                 </button>
                               )}
+                              {ds.state === "enabled" && (
+                                <button type="button" className="btn btn-quiet btn-sm" disabled={disable.isPending} onClick={() => disable.mutate(ds.id)}>
+                                  <Power aria-hidden className="size-4" />
+                                  Disable<span className="sr-only"> {ds.label}</span>
+                                </button>
+                              )}
                               <button type="button" className="btn btn-quiet btn-sm" onClick={() => {
                                 setOutcome(null);
                                 setForm(ds);
@@ -348,6 +395,19 @@ export function DataSourcesView() {
                                 <Pencil aria-hidden className="size-4" />
                                 Edit<span className="sr-only"> {ds.label}</span>
                               </button>
+                              {confirmDelete === ds.id ? (
+                                <>
+                                  <button type="button" className="btn btn-sm" disabled={remove.isPending} onClick={() => remove.mutate(ds.id)}>
+                                    Confirm delete<span className="sr-only"> {ds.label}</span>
+                                  </button>
+                                  <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmDelete(null)}>Cancel</button>
+                                </>
+                              ) : (
+                                <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmDelete(ds.id)}>
+                                  <Trash2 aria-hidden className="size-4" />
+                                  Delete<span className="sr-only"> {ds.label}</span>
+                                </button>
+                              )}
                             </span>
                           </td>
                         )}
